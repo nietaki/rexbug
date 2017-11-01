@@ -29,7 +29,6 @@ defmodule Rexbug.TranslatorTest do
       assert {:ok, ' -> return;stack'} == translate_actions([:return, :stack, :return, :stack])
     end
 
-
     test "returns an error if there's an invalid value in the actions collection" do
       assert @invalid_actions_error == translate_actions([:return, :wat])
       assert @invalid_actions_error == translate_actions([:return, "string"])
