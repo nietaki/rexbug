@@ -17,12 +17,21 @@ defmodule Rexbug.Translator do
       {:and, [line: 44], [
           {:<, [line: 44], [{:a, [line: 44], nil}, 1]}, true]}]}}
 
+  #===========================================================================
+  # Public Functions
+  #===========================================================================
+
   @spec translate(elixir_code :: String.t) :: {:ok, charlist} | {:error, atom}
 
   def translate(elixir_code) do
-    String.to_charlist(elixir_code)
+    with {:ok, quoted} <- Code.string_to_quoted(elixir_code),
+         {:ok, translated_erlang_string} <- translate_quoted(quoted),
+    do: String.to_charlist(translated_erlang_string)
   end
 
+  #---------------------------------------------------------------------------
+  # Actions
+  #---------------------------------------------------------------------------
 
   @type action :: :return | :stack
   @spec translate_actions([action] | action) :: {:ok, charlist} | {:error, atom}
@@ -43,7 +52,7 @@ defmodule Rexbug.Translator do
     if Enum.all?(actions, &(&1 in @valid_actions)) do
       translated = actions
       |> Enum.uniq()
-      |> Enum.map(&to_string/1)
+      |> Enum.map(&Atom.to_string/1)
       |> Enum.join(";")
       |> String.to_charlist()
       |> prepend_arrow()
@@ -56,6 +65,41 @@ defmodule Rexbug.Translator do
 
   def translate_actions(_), do: {:error, :invalid_actions}
 
+
+  #---------------------------------------------------------------------------
+  # Main translation
+  #---------------------------------------------------------------------------
+
+  ## top-level dispatcher
+  def translate_quoted({{:., _line1, _modfun}, _line2, _args} = quoted) do
+    translate_modfun(quoted)
+  end
+
+
+  def translate_modfun({{:., _line1, [mod, fun]}, _line2, args}) do
+    # TODO look at the args
+    with {:ok, mod_str} <- translate_mod(mod),
+         {:ok, fun_str} <- translate_fun(fun)
+    do
+      {:ok, "#{mod_str}:#{fun_str}"}
+    end
+  end
+
+  def translate_mod({:__aliases__, _line, elixir_module}) when is_list(elixir_module) do
+    joined = [:Elixir | elixir_module]
+    |> Enum.map(&Atom.to_string/1)
+    |> Enum.join(".")
+    {:ok, "'#{joined}'"}
+  end
+
+  def translate_mod(erlang_mod) when is_atom(erlang_mod) do
+    {:ok, Atom.to_string(erlang_mod)}
+  end
+
+
+  def translate_fun(f) when is_atom(f) do
+    {:ok, "'#{Atom.to_string(f)}'"} # TODO add quotes
+  end
 
   #---------------------------------------------------------------------------
   # Internal Functions

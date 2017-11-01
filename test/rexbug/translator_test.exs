@@ -35,4 +35,15 @@ defmodule Rexbug.TranslatorTest do
     end
   end
 
+
+  describe "Translator.translate/1" do
+    test "translates Foo.Bar.baz right" do
+      assert '\'Elixir.Foo.Bar\':\'baz\'' == translate("Foo.Bar.baz")
+    end
+
+    test "a simple erlang module.fun right" do
+      assert 'redbug:\'help\'' == translate(":redbug.help")
+    end
+  end
+
 end
