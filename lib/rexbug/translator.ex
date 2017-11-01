@@ -26,7 +26,7 @@ defmodule Rexbug.Translator do
   def translate(elixir_code) do
     with {:ok, quoted} <- Code.string_to_quoted(elixir_code),
          {:ok, translated_erlang_string} <- translate_quoted(quoted),
-    do: String.to_charlist(translated_erlang_string)
+    do: {:ok, String.to_charlist(translated_erlang_string)}
   end
 
   #---------------------------------------------------------------------------

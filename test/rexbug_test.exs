@@ -1,8 +1,14 @@
 defmodule RexbugTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false # we're instrumenting the system, let's not run stuff in parallel
   doctest Rexbug
 
-  test "the truth" do
-    assert 1 + 1 == 2
+  #===========================================================================
+  # Integration tests
+  #===========================================================================
+
+  test "sample elixir module invocation" do
+    assert {:timeout, 0} = Rexbug.start("Foo.Bar.abc", :return, blocking: true, time: 10)
   end
+
+
 end
