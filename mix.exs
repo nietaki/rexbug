@@ -10,6 +10,7 @@ defmodule Rexbug.Mixfile do
       elixirc_paths: elixirc_paths(Mix.env),
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
+      aliases: aliases(),
       deps: deps(),
 
       test_coverage: [tool: ExCoveralls],
@@ -35,6 +36,21 @@ defmodule Rexbug.Mixfile do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
 
   defp elixirc_paths(_),     do: ["lib"]
+
+
+  defp aliases do
+    [
+      "coveralls": [
+        "coveralls --exclude integration",
+      ],
+      "coveralls.html": [
+        "coveralls.html --exclude integration",
+      ],
+      "coveralls.travis": [
+        "coveralls.travis --exclude integration",
+      ],
+    ]
+  end
 
 
   defp docs do
