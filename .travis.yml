@@ -14,5 +14,5 @@ script:
       MIX_ENV=test mix coveralls.travis;
     else
       echo "===> Testing without code coverage";
-      mix test;
+      MIX_ENV=test mix test;
     fi
