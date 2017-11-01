@@ -1,18 +1,23 @@
 defmodule Rexbug do
   @moduledoc """
-  Documentation for Rexbug.
+  A thin Elixir wrapper for the redbug Erlang tracing debugger.
   """
 
-  @doc """
-  Hello world.
 
-  ## Examples
 
-      iex> Rexbug.hello
-      :world
-
-  """
-  def hello do
-    :world
+  def start(trace_pattern, actions) do
+    
   end
+
+  def stop() do
+    :redbug.stop()
+  end
+
+
+  def help() do
+    # TODO replace with own help with elixir syntax
+    :redbug.help()
+  end
+
+
 end
