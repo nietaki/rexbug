@@ -6,14 +6,13 @@ defmodule Rexbug do
   alias Rexbug.Translator
 
 
-  @spec start(String.t, :return | :stack | [:return | :stack], Keyword.t)
-    :: {:ok, {integer, integer}} | {:error, term}
-  def start(trace_pattern, actions, options \\ []) do
-    with {:ok, translated_mod_fun_arg_guards} <- Translator.translate(trace_pattern),
-         {:ok, translated_actions} <- Translator.translate_actions(actions),
-          rtp = translated_mod_fun_arg_guards ++ translated_actions
-    do
-      :redbug.start(rtp, options)
+  @spec start(String.t, Keyword.t)
+  :: {:ok, {integer, integer}} | {:error, term}
+
+  def start(trace_pattern, options \\ []) do
+    with {:ok, translated} <- Translator.translate(trace_pattern)
+      do
+      :redbug.start(translated, options)
     end
   end
 

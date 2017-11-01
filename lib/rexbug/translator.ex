@@ -1,6 +1,5 @@
 defmodule Rexbug.Translator do
 
-  @valid_actions [:return, :stack]
 
   {:ok,
     {:when, [line: 44], [
@@ -21,59 +20,25 @@ defmodule Rexbug.Translator do
   # Public Functions
   #===========================================================================
 
-
-
-  #---------------------------------------------------------------------------
-  # Actions
-  #---------------------------------------------------------------------------
-
-  @type action :: :return | :stack
-  @spec translate_actions([action] | action) :: {:ok, charlist} | {:error, atom}
-
-  def translate_actions(action) when action in [:return, :stack] do
-    translate_actions([action])
-  end
-
-  def translate_actions(falsy) when falsy in [nil, false] do
-    translate_actions([])
-  end
-
-  def translate_actions([]) do
-    {:ok, ''}
-  end
-
-  def translate_actions(actions) when is_list(actions) do
-    if Enum.all?(actions, &(&1 in @valid_actions)) do
-      translated = actions
-      |> Enum.uniq()
-      |> Enum.map(&Atom.to_string/1)
-      |> Enum.join(";")
-      |> String.to_charlist()
-      |> prepend_arrow()
-
-      {:ok, translated}
-    else
-      {:error, :invalid_actions}
-    end
-  end
-
-  def translate_actions(_), do: {:error, :invalid_actions}
-
-
-  #---------------------------------------------------------------------------
-  # Main translation
-  #---------------------------------------------------------------------------
-
   @spec translate(elixir_code :: String.t) :: {:ok, charlist} | {:error, atom}
 
   def translate(elixir_code) do
-    with {:ok, quoted} <- Code.string_to_quoted(elixir_code),
-         {:ok, translated_erlang_string} <- translate_quoted(quoted),
-    do: {:ok, String.to_charlist(translated_erlang_string)}
+    with {mfag, actions} = split_to_mfag_and_actions!(elixir_code),
+         {:ok, quoted} <- Code.string_to_quoted(mfag),
+         {:ok, {mfa, guards}} <- split_quoted_into_mfa_and_guards(quoted),
+         {:ok, {mfa, arity}} <- split_mfa_into_mfa_and_arity(mfa),
+         {:ok, {module, function, args}} <- split_mfa_into_module_function_and_args(mfa),
+         {:ok, translated_module} <- translate_module(module),
+         {:ok, translated_function} <- translate_function(function),
+         translated_actions = translate_actions!(actions)
+      do
+      translated = "#{translated_module}#{translated_function}#{translated_actions}" |> String.to_charlist()
+      {:ok, translated}
+    end
   end
 
-  @doc false
-  def split_to_mfag_and_actions(elixir_code) do
+
+  def split_to_mfag_and_actions!(elixir_code) do
     {mfag, actions} =
       case String.split(elixir_code, " :: ", parts: 2) do
         [mfag, actions] -> {mfag, actions}
@@ -83,46 +48,68 @@ defmodule Rexbug.Translator do
     {String.trim(mfag), String.trim(actions)}
   end
 
-  ## top-level dispatcher
-  def translate_quoted({{:., _line1, _modfun}, _line2, _args} = quoted) do
-    translate_modfun(quoted)
+
+  def split_quoted_into_mfa_and_guards({:when, _line, [mfa, guards]}) do
+   {:ok, {mfa, guards}}
+  end
+
+  def split_quoted_into_mfa_and_guards(els) do
+    {:ok, {els, nil}}
   end
 
 
-  def translate_modfun({{:., _line1, [mod, fun]}, _line2, args}) do
-    # TODO look at the args
-    with {:ok, mod_str} <- translate_mod(mod),
-         {:ok, fun_str} <- translate_fun(fun)
-    do
-      {:ok, "#{mod_str}:#{fun_str}"}
-    end
+  def split_mfa_into_mfa_and_arity({:"/", _line, [mfa, arity]}) do
+    {:ok, {mfa, arity}}
   end
 
-  def translate_mod({:__aliases__, _line, elixir_module}) when is_list(elixir_module) do
+  def split_mfa_into_mfa_and_arity(els) do
+    {:ok, {els, nil}}
+  end
+
+
+  def split_mfa_into_module_function_and_args({{:".", _l1, [module, function]}, _l2, args}) do
+    {:ok, {module, function, args}}
+  end
+
+  def split_mfa_into_module_function_and_args(els) do
+    {:ok, {els, nil, nil}}
+  end
+
+
+  def translate_module({:__aliases__, _line, elixir_module}) when is_list(elixir_module) do
     joined = [:Elixir | elixir_module]
     |> Enum.map(&Atom.to_string/1)
     |> Enum.join(".")
     {:ok, "'#{joined}'"}
   end
 
-  def translate_mod(erlang_mod) when is_atom(erlang_mod) do
+  def translate_module(erlang_mod) when is_atom(erlang_mod) do
     {:ok, Atom.to_string(erlang_mod)}
   end
 
-  def translate_mod(module), do: {:error, {:invalid_module, module}}
+  def translate_module(module), do: {:error, {:invalid_module, module}}
 
 
-  def translate_fun(f) when is_atom(f) do
-    {:ok, "'#{Atom.to_string(f)}'"} # TODO add quotes
+  def translate_function(nil) do
+    {:ok, ""}
   end
 
-  #---------------------------------------------------------------------------
-  # Internal Functions
-  #---------------------------------------------------------------------------
+  def translate_function(f) when is_atom(f) do
+    {:ok, ":'#{Atom.to_string(f)}'"}
+  end
 
-  @spec prepend_arrow(action_spec :: charlist) :: charlist
-  defp prepend_arrow(action_spec) do
-    ' -> ' ++ action_spec
+
+  def translate_function(els) do
+    {:error, {:invalid_function, els}}
+  end
+
+
+  def translate_actions!(empty) when empty in [nil, ""] do
+    ""
+  end
+
+  def translate_actions!(actions) when is_binary(actions) do
+    " -> #{actions}"
   end
 
 end

@@ -9,7 +9,7 @@ defmodule RexbugTest do
   #===========================================================================
 
   test "sample elixir module invocation" do
-    assert {:timeout, 0} = Rexbug.start("Foo.Bar.abc", :return, blocking: true, time: 10)
+    assert {:timeout, 0} = Rexbug.start("Foo.Bar.abc", blocking: true, time: 10)
   end
 
 
