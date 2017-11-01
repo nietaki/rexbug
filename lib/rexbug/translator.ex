@@ -21,13 +21,7 @@ defmodule Rexbug.Translator do
   # Public Functions
   #===========================================================================
 
-  @spec translate(elixir_code :: String.t) :: {:ok, charlist} | {:error, atom}
 
-  def translate(elixir_code) do
-    with {:ok, quoted} <- Code.string_to_quoted(elixir_code),
-         {:ok, translated_erlang_string} <- translate_quoted(quoted),
-    do: {:ok, String.to_charlist(translated_erlang_string)}
-  end
 
   #---------------------------------------------------------------------------
   # Actions
@@ -70,6 +64,25 @@ defmodule Rexbug.Translator do
   # Main translation
   #---------------------------------------------------------------------------
 
+  @spec translate(elixir_code :: String.t) :: {:ok, charlist} | {:error, atom}
+
+  def translate(elixir_code) do
+    with {:ok, quoted} <- Code.string_to_quoted(elixir_code),
+         {:ok, translated_erlang_string} <- translate_quoted(quoted),
+    do: {:ok, String.to_charlist(translated_erlang_string)}
+  end
+
+  @doc false
+  def split_to_mfag_and_actions(elixir_code) do
+    {mfag, actions} =
+      case String.split(elixir_code, " :: ", parts: 2) do
+        [mfag, actions] -> {mfag, actions}
+        [mfag] -> {mfag, ""}
+      end
+
+    {String.trim(mfag), String.trim(actions)}
+  end
+
   ## top-level dispatcher
   def translate_quoted({{:., _line1, _modfun}, _line2, _args} = quoted) do
     translate_modfun(quoted)
@@ -95,6 +108,8 @@ defmodule Rexbug.Translator do
   def translate_mod(erlang_mod) when is_atom(erlang_mod) do
     {:ok, Atom.to_string(erlang_mod)}
   end
+
+  def translate_mod(module), do: {:error, {:invalid_module, module}}
 
 
   def translate_fun(f) when is_atom(f) do
