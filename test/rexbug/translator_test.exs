@@ -26,6 +26,19 @@ defmodule Rexbug.TranslatorTest do
       assert {:ok, 'cowboy -> return'} == translate(":cowboy :: return")
       assert {:ok, 'cowboy:\'fun\' -> return;stack'} == translate(":cowboy.fun :: return;stack")
     end
+
+    test "parsing rubbish" do
+      assert {:error, _} = translate("ldkjf 'dkf ls;lf sjdkf 4994{}")
+    end
+
+    test "literal arity" do
+      assert {:ok, 'cowboy:\'do_sth\'/5'} == translate(":cowboy.do_sth/5")
+    end
+
+    test "whatever arity" do
+      assert {:ok, 'cowboy:\'do_sth\''} == translate(":cowboy.do_sth/x")
+      assert {:ok, 'cowboy:\'do_sth\''} == translate(":cowboy.do_sth/really_whatever")
+    end
   end
 
 

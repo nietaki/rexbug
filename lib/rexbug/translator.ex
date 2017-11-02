@@ -30,10 +30,23 @@ defmodule Rexbug.Translator do
          {:ok, {module, function, args}} <- split_mfa_into_module_function_and_args(mfa),
          {:ok, translated_module} <- translate_module(module),
          {:ok, translated_function} <- translate_function(function),
+         {:ok, translated_arity} <- translate_arity(arity),
          translated_actions = translate_actions!(actions)
       do
-      translated = "#{translated_module}#{translated_function}#{translated_actions}" |> String.to_charlist()
-      {:ok, translated}
+      translated_arguments = "" # FIXME placeholder
+      translated =
+        case translated_arity do
+          :any ->
+            # no args, no arity
+            "#{translated_module}#{translated_function}#{translated_actions}"
+          arity when is_integer(arity) ->
+            # no args, arity present
+            "#{translated_module}#{translated_function}#{translated_actions}/#{arity}"
+          nil ->
+            # args, no arity
+            "#{translated_module}#{translated_function}#{translated_actions}#{translated_arguments}"
+        end
+      {:ok, String.to_charlist(translated)}
     end
   end
 
@@ -101,6 +114,23 @@ defmodule Rexbug.Translator do
 
   def translate_function(els) do
     {:error, {:invalid_function, els}}
+  end
+
+
+  def translate_arity({var, [line: 1], nil}) when is_atom(var) do
+    {:ok, :any}
+  end
+
+  def translate_arity(i) when is_integer(i) do
+    {:ok, i}
+  end
+
+  def translate_arity(none) when none in [nil, ""] do
+    {:ok, nil}
+  end
+
+  def translate_arity(els) do
+    {:error, {:invalid_arity, els}}
   end
 
 
