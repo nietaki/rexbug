@@ -7,24 +7,26 @@ defmodule Rexbug.TranslatorTest do
 
   describe "Translator.translate/1" do
     test "translates Foo.Bar.baz right" do
-      assert {:ok, '\'Elixir.Foo.Bar\':\'abc\''} == translate("Foo.Bar.abc")
+      assert {:ok, '\'Elixir.Foo.Bar\':\'abc\'()'} == translate("Foo.Bar.abc")
+      assert {:ok, '\'Elixir.Foo.Bar\':\'abc\'()'} == translate("Foo.Bar.abc()")
     end
 
     test "a simple erlang module.fun right" do
-      assert {:ok, 'redbug:\'help\''} == translate(":redbug.help")
+      assert {:ok, 'redbug:\'help\'()'} == translate(":redbug.help()")
+      assert {:ok, 'redbug:\'help\'()'} == translate(":redbug.help")
     end
 
     test "just an erlang module" do
       assert {:ok, 'cowboy'} == translate(":cowboy")
     end
 
-    test "just and elixir module" do
+    test "just an elixir module" do
       assert {:ok, '\'Elixir.Foo.Bar\''} == translate("Foo.Bar")
     end
 
     test "actions" do
       assert {:ok, 'cowboy -> return'} == translate(":cowboy :: return")
-      assert {:ok, 'cowboy:\'fun\' -> return;stack'} == translate(":cowboy.fun :: return;stack")
+      assert {:ok, 'cowboy:\'fun\'() -> return;stack'} == translate(":cowboy.fun() :: return;stack")
     end
 
     test "parsing rubbish" do
@@ -38,6 +40,11 @@ defmodule Rexbug.TranslatorTest do
     test "whatever arity" do
       assert {:ok, 'cowboy:\'do_sth\''} == translate(":cowboy.do_sth/x")
       assert {:ok, 'cowboy:\'do_sth\''} == translate(":cowboy.do_sth/really_whatever")
+    end
+
+
+    test "invalid arg" do
+      assert {:error, _} = translate(":cowboy.do_sth(2 + 3)")
     end
   end
 

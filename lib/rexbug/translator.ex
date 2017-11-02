@@ -30,10 +30,10 @@ defmodule Rexbug.Translator do
          {:ok, {module, function, args}} <- split_mfa_into_module_function_and_args(mfa),
          {:ok, translated_module} <- translate_module(module),
          {:ok, translated_function} <- translate_function(function),
+         {:ok, translated_args} <- translate_args(args),
          {:ok, translated_arity} <- translate_arity(arity),
          translated_actions = translate_actions!(actions)
       do
-      translated_arguments = "" # FIXME placeholder
       translated =
         case translated_arity do
           :any ->
@@ -41,10 +41,10 @@ defmodule Rexbug.Translator do
             "#{translated_module}#{translated_function}#{translated_actions}"
           arity when is_integer(arity) ->
             # no args, arity present
-            "#{translated_module}#{translated_function}#{translated_actions}/#{arity}"
+            "#{translated_module}#{translated_function}/#{arity}#{translated_actions}"
           nil ->
-            # args, no arity
-            "#{translated_module}#{translated_function}#{translated_actions}#{translated_arguments}"
+            # args present, no arity
+            "#{translated_module}#{translated_function}#{translated_args}#{translated_actions}"
         end
       {:ok, String.to_charlist(translated)}
     end
@@ -114,6 +114,32 @@ defmodule Rexbug.Translator do
 
   def translate_function(els) do
     {:error, {:invalid_function, els}}
+  end
+
+
+  def translate_args(nil), do: {:ok, ""}
+
+  def translate_args(args) when is_list(args) do
+    translated = Enum.map(args, &translate_arg/1)
+    first_error = Enum.find(translated, :no_error, fn(res) -> !match?({:ok, _}, res) end)
+    case first_error do
+      :no_error ->
+        string_args = translated
+        |> Enum.map(fn {:ok, res} -> res end)
+        |> Enum.join(", ")
+
+        {:ok, "(#{string_args})"}
+      err -> err
+    end
+  end
+
+  def translate_args(els) do
+    {:error, {:invalid_args, els}}
+  end
+
+
+  def translate_arg(arg) do
+    {:error, :not_implemented}
   end
 
 
