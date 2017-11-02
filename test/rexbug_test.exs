@@ -9,8 +9,31 @@ defmodule RexbugTest do
   #===========================================================================
 
   test "sample elixir module invocation" do
-    assert {:timeout, 0} = Rexbug.start("Foo.Bar.abc", blocking: true, time: 10)
+    validate("Foo.Bar.abc")
   end
 
+  #---------------------------------------------------------------------------
+  # Invocation validation
+  #---------------------------------------------------------------------------
+
+  describe "invocation validation" do
+    test "module", do: validate(":crypto")
+  end
+
+  #===========================================================================
+  # Utility functions
+  #===========================================================================
+
+  defp validate(elixir_invocation) do
+    assert {x, y} = Rexbug.start(elixir_invocation, time: 20)
+    assert is_integer(x)
+    assert is_integer(y)
+    assert stop_safely()
+  end
+
+
+  defp stop_safely() do
+    assert Rexbug.stop_sync() in [:not_started, :stopped]
+  end
 
 end
