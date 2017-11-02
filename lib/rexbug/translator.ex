@@ -37,7 +37,7 @@ defmodule Rexbug.Translator do
 
   def split_to_mfag_and_actions!(elixir_code) do
     {mfag, actions} =
-      case String.split(elixir_code, " :: ", parts: 2) do
+      case String.split(elixir_code, " ::", parts: 2) do
         [mfag, actions] -> {mfag, actions}
         [mfag] -> {mfag, ""}
       end
