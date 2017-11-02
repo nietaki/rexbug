@@ -77,7 +77,7 @@ defmodule Rexbug.Mixfile do
       # {:meck, "~> 0.8", only: :test},
       {:redbug, "~> 1.0"},
       {:excoveralls, "~> 0.4", only: :test},
-      {:ex_doc, "~> 0.14.3", only: :dev}
+      {:ex_doc, "~> 0.18.1", only: :dev}
     ]
   end
 

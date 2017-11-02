@@ -5,11 +5,30 @@ defmodule Rexbug do
 
   alias Rexbug.Translator
 
+  @type redbug_non_blocking_return :: {proc_count :: integer, func_count :: integer}
+  @type redbug_blocking_return     :: {stop_reason :: atom, trace_messages :: [term]}
+  @type redbug_error               :: {error_type :: atom, error_reason :: term}
+  @type rexbug_error               :: {:error, reason :: term}
 
-  @spec start(String.t, Keyword.t)
-  :: {:ok, {integer, integer}} | {:error, term}
+  @type rexbug_return :: redbug_non_blocking_return | redbug_blocking_return | redbug_error | rexbug_error
 
-  def start(trace_pattern, options \\ []) do
+  @type proc  :: pid() | atom | {pid, integer, integer}
+  @type procs :: :all | :new | :running | proc | [proc]
+
+  @spec start(trace_pattern :: String.t) :: rexbug_return
+  def start(trace_pattern), do: start(trace_pattern, [])
+
+  @spec start(time :: integer, msgs :: integer, trace_pattern :: String.t) :: rexbug_return
+  def start(time, msgs, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs])
+
+  @spec start(time :: integer, msgs :: integer, procs :: procs, trace_pattern :: String.t) :: rexbug_return
+  def start(time, msgs, procs, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs, procs: procs])
+
+  @spec start(time :: integer, msgs :: integer, procs :: procs, node :: node(), trace_pattern :: String.t) :: rexbug_return
+  def start(time, msgs, procs, node, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs, procs: procs, target: node])
+
+  @spec start(trace_pattern :: String.t, opts :: Keyword.t) :: rexbug_return
+  def start(trace_pattern, options) do
     with {:ok, translated} <- Translator.translate(trace_pattern)
       do
       :redbug.start(translated, options)
