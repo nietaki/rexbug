@@ -29,7 +29,8 @@ defmodule Rexbug do
 
   @spec start(trace_pattern :: String.t, opts :: Keyword.t) :: rexbug_return
   def start(trace_pattern, options) do
-    with {:ok, translated} <- Translator.translate(trace_pattern)
+    with {:ok, options} <- Translator.translate_options(options),
+         {:ok, translated} <- Translator.translate(trace_pattern)
       do
       :redbug.start(translated, options)
     end

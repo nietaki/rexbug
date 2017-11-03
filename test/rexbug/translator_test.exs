@@ -48,7 +48,24 @@ defmodule Rexbug.TranslatorTest do
     end
   end
 
+  describe "Translator.translate_options/1" do
+    test "returns empty list for an empty list" do
+      assert {:ok, []} == translate_options([])
+    end
 
+    test "passes through irrelevant options" do
+      assert {:ok, [abc: :def, foo: :bar]} == translate_options([abc: :def, foo: :bar])
+    end
+
+    test "returns an error for invalid options" do
+      assert {:error, :invalid_options} == translate_options(:foo)
+      assert {:error, :invalid_options} == translate_options([:foo])
+    end
+
+    test "translates the file options right" do
+      assert {:ok, [file: 'a.txt', print_file: 'b.txt']} == translate_options(file: "a.txt", print_file: "b.txt")
+    end
+  end
 
   describe "Translator.split_to_mfag_and_actions!/1" do
     test "a full case" do
@@ -60,5 +77,8 @@ defmodule Rexbug.TranslatorTest do
       assert {":foo", ""} == split_to_mfag_and_actions!(":foo")
     end
   end
+
+
+  # defp assert_options(translate)
 
 end

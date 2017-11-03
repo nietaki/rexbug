@@ -8,7 +8,6 @@ defmodule Rexbug.Translator do
   # Translating trace pattern
   #---------------------------------------------------------------------------
 
-
   @spec translate(trace_pattern :: String.t) :: {:ok, charlist} | {:error, atom}
 
   def translate(trace_pattern) do
@@ -54,9 +53,46 @@ defmodule Rexbug.Translator do
   # Translating options
   #---------------------------------------------------------------------------
 
+  @spec translate_options(Keyword.t) :: {:ok, Keyword.t} | {:error, term}
+
+  def translate_options(options) when is_list(options) do
+    options
+    |> Enum.map(&translate_option/1)
+    |> collapse_errors()
+  end
+
+  def translate_options(_), do: {:error, :invalid_options}
+
+
+  @binary_to_charlist_options [:file, :print_file]
+
+  defp translate_option({file_option, filename})
+  when file_option in @binary_to_charlist_options and is_binary(filename) do
+    {:ok, {file_option, String.to_charlist(filename)}}
+  end
+
+  defp translate_option({k, v}) do
+    {:ok, {k, v}}
+  end
+
+  defp translate_option(_), do: {:error, :invalid_options}
+
+
   #===========================================================================
   # Private functions
   #===========================================================================
+
+  @spec collapse_errors([{:ok, term} | {:error, term}]) :: {:ok, [term]} | {:error, term}
+  defp collapse_errors(tuples) do
+    # we could probably play around with some monads for this
+    first_error = Enum.find(tuples, :no_error_to_collapse, fn(res) -> !match?({:ok, _}, res) end)
+    case first_error do
+      :no_error_to_collapse ->
+        results = Enum.map(tuples, fn {:ok, res} -> res end)
+        {:ok, results}
+      err -> err
+    end
+  end
 
   defp split_quoted_into_mfa_and_guards({:when, _line, [mfa, guards]}) do
    {:ok, {mfa, guards}}
@@ -117,14 +153,10 @@ defmodule Rexbug.Translator do
 
   defp translate_args(args) when is_list(args) do
     translated = Enum.map(args, &translate_arg/1)
-    first_error = Enum.find(translated, :no_error, fn(res) -> !match?({:ok, _}, res) end)
-    case first_error do
-      :no_error ->
-        string_args = translated
-        |> Enum.map(fn {:ok, res} -> res end)
-        |> Enum.join(", ")
-
-        {:ok, "(#{string_args})"}
+    case collapse_errors(translated) do
+      {:ok, results} ->
+        joined_args = Enum.join(results, ", ")
+        {:ok, "(#{joined_args})"}
       err -> err
     end
   end
