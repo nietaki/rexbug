@@ -25,6 +25,7 @@ defmodule RexbugIntegrationTest do
     test "multiple actions", do: validate("Foo.Bar.abc :: return;stack")
     test "no actions", do: validate("Foo.Bar.abc :: ")
     test "no actions and no space after ::", do: validate("Foo.Bar.abc ::")
+    test "complicated case", do: validate("Foo.Bar.xyz(#\{\}, [foo], c)")
   end
 
   #===========================================================================

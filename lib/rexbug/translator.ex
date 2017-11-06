@@ -129,7 +129,7 @@ defmodule Rexbug.Translator do
   end
 
   defp translate_module(erlang_mod) when is_atom(erlang_mod) do
-    {:ok, Atom.to_string(erlang_mod)}
+    {:ok, "\'#{Atom.to_string(erlang_mod)}\'"}
   end
 
   defp translate_module(module), do: {:error, {:invalid_module, module}}
@@ -166,8 +166,76 @@ defmodule Rexbug.Translator do
   end
 
 
+  defp translate_arg(nil), do: {:ok, "nil"}
+
+  defp translate_arg(boolean) when is_boolean(boolean) do
+    {:ok, "#{boolean}"}
+  end
+
+  defp translate_arg({var, _line, nil}) when is_atom(var) do
+    var
+    |> Atom.to_string()
+    |> String.capitalize()
+    |> wrap_in_ok()
+  end
+
+  defp translate_arg(arg) when is_atom(arg) do
+    {:ok, "'#{Atom.to_string(arg)}'"}
+  end
+
+  defp translate_arg(binary) when is_binary(binary) do
+    if String.printable?(binary) && byte_size(binary) == String.length(binary) do
+      {:ok, "<<\"#{binary}\">>"}
+    else
+      res = binary
+      |> :binary.bin_to_list()
+      |> Enum.join(", ")
+      {:ok, "<<#{res}>>"}
+    end
+  end
+
+  # defp translate_arg(bs) when is_bitstring(bs) do
+  #   :error
+  # end
+
+  defp translate_arg(ls) when is_list(ls) do
+    ls
+    |> Enum.map(&translate_arg/1)
+    |> collapse_errors()
+    |> map_success(fn(elements) -> "[#{Enum.join(elements, ", ")}]" end)
+  end
+
+  defp translate_arg({:%{}, _line, tuples}) when is_list(tuples) do
+    # maps seem to be broken
+    tuples
+    |> Enum.map(&translate_map_tuple/1)
+    |> collapse_errors()
+    |> map_success(&Enum.join(&1, ", "))
+    |> map_success(fn(x) -> "#\{#{x}\}" end)
+  end
+
+  defp translate_arg({:-, _line, [num]}) do
+    with {:ok, translated_num} <- translate_arg(num),
+    do: {:ok, "-#{translated_num}"}
+  end
+
+  defp translate_arg(num) when is_integer(num) or is_float(num) do
+    {:ok, "#{num}"}
+  end
+
   defp translate_arg(arg) do
-    {:error, :not_implemented}
+    {:error, {:invalid_arg, arg}}
+  end
+
+
+  defp translate_map_tuple({k, v}) do
+    with {:ok, tk} <- translate_arg(k),
+         {:ok, tv} <- translate_arg(v),
+    do: {:ok, "#{tk} => #{tv}"}
+  end
+
+  defp translate_map_tuple(els) do
+    {:error, {:invalid_arg, els}}
   end
 
 
@@ -195,5 +263,15 @@ defmodule Rexbug.Translator do
   defp translate_actions!(actions) when is_binary(actions) do
     " -> #{actions}"
   end
+
+
+  defp map_success({:ok, var}, fun) do
+    {:ok, fun.(var)}
+  end
+
+  defp map_success(els, _), do: els
+
+
+  defp wrap_in_ok(x), do: {:ok, x}
 
 end
