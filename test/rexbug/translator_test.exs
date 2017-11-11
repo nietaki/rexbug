@@ -73,15 +73,15 @@ defmodule Rexbug.TranslatorTest do
       assert_args('[1, X], 3', "[1, x], 3")
     end
 
-    test "maps" do
-      assert_args('#\{1 => 2\, 3 => 4}', "%{1 => 2, 3 => 4}")
-      assert_args('#\{}', "%{}")
-      assert_args('#\{\'foo\' => Bar}', "%{foo: bar}")
-    end
-
     test "binaries" do
       assert_args('<<"foo">>', "\"foo\"")
       assert_args('<<102, 111, 111, 0>>', "\"foo\\0\"")
+    end
+
+    test "tuples" do
+      assert_args('{}', "{}")
+      assert_args('{A, B}', "{a, b}")
+      assert_args('{_, X, 1}', "{_, x, 1}")
     end
   end
 
@@ -117,7 +117,19 @@ defmodule Rexbug.TranslatorTest do
   end
 
   defp assert_args(expected, input) do
-    assert {:ok, '\'a\':\'b\'(' ++ expected ++ ')'} == translate(":a.b(#{input})")
+    input = ":a.b(#{input}, 0)"
+    assert {:ok, '\'a\':\'b\'(' ++ expected ++ ', 0)'} == translate(input)
+  end
+
+
+  test "author's assumptions" do
+    assert {:{}, _line, []} = Code.string_to_quoted!("{}")
+    assert {:{}, _line, [1]} = Code.string_to_quoted!("{1}")
+    assert {1, 2} = Code.string_to_quoted!("{1, 2}")
+    assert {:{}, _line, [1, 2, 3]} = Code.string_to_quoted!("{1, 2, 3}")
+    assert {:{}, _line, [1, 2, 3, 4]} = Code.string_to_quoted!("{1, 2, 3, 4}")
+    assert {:{}, _line, [1, 2, 3, 4, 5]} = Code.string_to_quoted!("{1, 2, 3, 4, 5}")
+    assert {:{}, _line, [1, 2, 3, 4, 5, 6]} = Code.string_to_quoted!("{1, 2, 3, 4, 5, 6}")
   end
 
 end

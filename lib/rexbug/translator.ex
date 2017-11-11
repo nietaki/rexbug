@@ -172,13 +172,6 @@ defmodule Rexbug.Translator do
     {:ok, "#{boolean}"}
   end
 
-  defp translate_arg({var, _line, nil}) when is_atom(var) do
-    var
-    |> Atom.to_string()
-    |> String.capitalize()
-    |> wrap_in_ok()
-  end
-
   defp translate_arg(arg) when is_atom(arg) do
     {:ok, "'#{Atom.to_string(arg)}'"}
   end
@@ -205,15 +198,6 @@ defmodule Rexbug.Translator do
     |> map_success(fn(elements) -> "[#{Enum.join(elements, ", ")}]" end)
   end
 
-  defp translate_arg({:%{}, _line, tuples}) when is_list(tuples) do
-    # maps seem to be broken
-    tuples
-    |> Enum.map(&translate_map_tuple/1)
-    |> collapse_errors()
-    |> map_success(&Enum.join(&1, ", "))
-    |> map_success(fn(x) -> "#\{#{x}\}" end)
-  end
-
   defp translate_arg({:-, _line, [num]}) do
     with {:ok, translated_num} <- translate_arg(num),
     do: {:ok, "-#{translated_num}"}
@@ -223,19 +207,31 @@ defmodule Rexbug.Translator do
     {:ok, "#{num}"}
   end
 
+  # there's a catch here:
+  # iex(12)> Code.string_to_quoted!("{1,2,3}")
+  # {:{}, [line: 1], [1, 2, 3]}
+  # iex(13)> Code.string_to_quoted!("{1,2}")
+  # {1, 2}
+  defp translate_arg({:{}, _line, tuple_elements}) do
+    tuple_elements
+    |> Enum.map(&translate_arg/1)
+    |> collapse_errors()
+    |> map_success(fn(elements) -> "{#{Enum.join(elements, ", ")}}" end)
+  end
+
+  # the literally represented 2-tuples
+  defp translate_arg({x, y}), do: translate_arg({:{}, [line: 1], [x, y]})
+
+  # other atoms are just variable names
+  defp translate_arg({var, _line, nil}) when is_atom(var) do
+    var
+    |> Atom.to_string()
+    |> String.capitalize()
+    |> wrap_in_ok()
+  end
+
   defp translate_arg(arg) do
     {:error, {:invalid_arg, arg}}
-  end
-
-
-  defp translate_map_tuple({k, v}) do
-    with {:ok, tk} <- translate_arg(k),
-         {:ok, tv} <- translate_arg(v),
-    do: {:ok, "#{tk} => #{tv}"}
-  end
-
-  defp translate_map_tuple(els) do
-    {:error, {:invalid_arg, els}}
   end
 
 

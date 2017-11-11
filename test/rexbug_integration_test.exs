@@ -25,7 +25,9 @@ defmodule RexbugIntegrationTest do
     test "multiple actions", do: validate("Foo.Bar.abc :: return;stack")
     test "no actions", do: validate("Foo.Bar.abc :: ")
     test "no actions and no space after ::", do: validate("Foo.Bar.abc ::")
-    test "complicated case", do: validate("Foo.Bar.xyz(#\{\}, [foo], c)")
+    test "complicated case", do: validate("Foo.Bar.xyz(_, [foo], c)")
+    test "complicated case with tuples", do: validate("Foo.Bar.xyz({1, 1}, [_], {_, _, _})")
+    test "complicated case with tuples 2", do: validate("Foo.Bar.xyz({a, b}, [_], {_, _, _})")
   end
 
   #===========================================================================
@@ -35,9 +37,11 @@ defmodule RexbugIntegrationTest do
   defp validate(elixir_invocation, options \\ []) do
     options = [time: 20] ++ options
     capture_io(fn ->
-      assert {x, y} = Rexbug.start(elixir_invocation, options)
-      assert is_integer(x)
-      assert is_integer(y)
+      assert {x, y} = res = Rexbug.start(elixir_invocation, options)
+      case {is_integer(x), is_integer(y)} do
+        {true, true} -> :all_good
+        _ -> flunk(inspect(res) <> " returned by Rexbug.start()" )
+      end
       assert stop_safely()
     end)
   end
