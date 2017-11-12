@@ -16,6 +16,11 @@ defmodule Rexbug.TranslatorTest do
       assert {:ok, '\'redbug\':\'help\'()'} == translate(":redbug.help")
     end
 
+    test "errors out in situations when fragments are duplicated (?)" do
+      assert {:error, {:invalid_module, _}} = translate(":redbug.one.two()")
+      assert {:error, _} = translate(":redbug.one(:foo)(:bar)")
+    end
+
     test "just an erlang module" do
       assert {:ok, '\'cowboy\''} == translate(":cowboy")
     end
@@ -40,6 +45,10 @@ defmodule Rexbug.TranslatorTest do
     test "whatever arity" do
       assert {:ok, '\'cowboy\':\'do_sth\''} == translate(":cowboy.do_sth/x")
       assert {:ok, '\'cowboy\':\'do_sth\''} == translate(":cowboy.do_sth/really_whatever")
+    end
+
+    test "invalid arity" do
+      assert {:error, _} = translate(":cowboy.do_sth/(1 + 1)")
     end
 
     test "invalid arg" do
@@ -83,6 +92,11 @@ defmodule Rexbug.TranslatorTest do
       assert_args('{A, B}', "{a, b}")
       assert_args('{_, X, 1}', "{_, x, 1}")
     end
+
+    test "invalid argument in a list" do
+      assert_args_error("[3, -a]")
+      assert_args_error("[3, -:foo.bar()]")
+    end
   end
 
 
@@ -116,9 +130,16 @@ defmodule Rexbug.TranslatorTest do
     end
   end
 
+
   defp assert_args(expected, input) do
     input = ":a.b(#{input}, 0)"
     assert {:ok, '\'a\':\'b\'(' ++ expected ++ ', 0)'} == translate(input)
+  end
+
+
+  defp assert_args_error(input) do
+    input = ":a.b(#{input}, 0)"
+    assert {:error, _} = translate(input)
   end
 
 

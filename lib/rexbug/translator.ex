@@ -13,9 +13,9 @@ defmodule Rexbug.Translator do
   def translate(trace_pattern) do
     with {mfag, actions} = split_to_mfag_and_actions!(trace_pattern),
          {:ok, quoted} <- Code.string_to_quoted(mfag),
-         {:ok, {mfa, guards}} <- split_quoted_into_mfa_and_guards(quoted),
-         {:ok, {mfa, arity}} <- split_mfa_into_mfa_and_arity(mfa),
-         {:ok, {module, function, args}} <- split_mfa_into_module_function_and_args(mfa),
+         {:ok, {mfa, guards}} = split_quoted_into_mfa_and_guards(quoted),
+         {:ok, {mfa, arity}} = split_mfa_into_mfa_and_arity(mfa),
+         {:ok, {module, function, args}} = split_mfa_into_module_function_and_args(mfa),
          {:ok, translated_module} <- translate_module(module),
          {:ok, translated_function} <- translate_function(function),
          {:ok, translated_args} <- translate_args(args),
@@ -198,8 +198,8 @@ defmodule Rexbug.Translator do
     |> map_success(fn(elements) -> "[#{Enum.join(elements, ", ")}]" end)
   end
 
-  defp translate_arg({:-, _line, [num]}) do
-    with {:ok, translated_num} <- translate_arg(num),
+  defp translate_arg({:-, _line, [num]}) when is_integer(num) or is_float(num) do
+    with {:ok, translated_num} = translate_arg(num),
     do: {:ok, "-#{translated_num}"}
   end
 
