@@ -170,14 +170,11 @@ defmodule Rexbug.Translator do
   defp translate_args(nil), do: {:ok, ""}
 
   defp translate_args(args) when is_list(args) do
-    translated = Enum.map(args, &translate_arg/1)
-    # TODO map success
-    case collapse_errors(translated) do
-      {:ok, results} ->
-        joined_args = Enum.join(results, ", ")
-        {:ok, "(#{joined_args})"}
-      err -> err
-    end
+    args
+    |> Enum.map(&translate_arg/1)
+    |> collapse_errors()
+    |> map_success(&Enum.join(&1, ", "))
+    |> map_success(fn(res) -> "(#{res})" end)
   end
 
   defp translate_args(els) do
