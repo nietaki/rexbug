@@ -51,6 +51,18 @@ defmodule Rexbug.TranslatorTest do
       assert {:error, _} = translate(":cowboy.do_sth/(1 + 1)")
     end
 
+    test "both arity and function args provided" do
+      assert {:error, _} = translate(":cowboy.foo(1, 2)/3")
+    end
+
+    test "arity without a function" do
+      assert {:error, _} = translate(":cowboy/3")
+    end
+
+    test "args without a function" do
+      assert {:error, _} = translate(":cowboy(:wat)")
+    end
+
     test "invalid arg" do
       assert {:error, _} = translate(":cowboy.do_sth(2 + 3)")
     end
@@ -62,12 +74,29 @@ defmodule Rexbug.TranslatorTest do
       assert_args('\'foo\', \'bar baz\'', ":foo, :\"bar baz\"")
     end
 
-    test "number literals" do
-      assert_args('-5, 3.14', "-5, 3.14")
+    test "integer literals" do
+      assert_args('-5, 255', "-5, 0xFF")
+    end
+
+    test "floats aren't handled" do
+      assert_args_error("3.14159")
     end
 
     test "booleans" do
       assert_args('true, false', "true, false")
+    end
+
+    test "strings" do
+      assert_args('<<"wat">>', "\"wat\"")
+      assert_args('<<119, 97, 116, 0>>', "\"wat\0\"")
+    end
+
+    test "binaries" do
+      assert_args('<<>>', "<<>>")
+      assert_args('<<0>>', "<<0>>")
+      assert_args('<<119, 97, 116>>', "<<\"wat\">>")
+      assert_args('<<1, 119, 97, 116, 0>>', "<<1, \"wat\", 0>>")
+      assert_args('<<119, 97, 116, 0>>', "<<\"wat\0\">>")
     end
 
     test "nil" do
@@ -80,11 +109,6 @@ defmodule Rexbug.TranslatorTest do
 
     test "lists" do
       assert_args('[1, X], 3', "[1, x], 3")
-    end
-
-    test "binaries" do
-      assert_args('<<"foo">>', "\"foo\"")
-      assert_args('<<102, 111, 111, 0>>', "\"foo\\0\"")
     end
 
     test "tuples" do

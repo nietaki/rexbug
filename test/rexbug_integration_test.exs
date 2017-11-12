@@ -25,6 +25,16 @@ defmodule RexbugIntegrationTest do
     test "multiple actions", do: validate("Foo.Bar.abc :: return;stack")
     test "no actions", do: validate("Foo.Bar.abc :: ")
     test "no actions and no space after ::", do: validate("Foo.Bar.abc ::")
+
+    # all argument types
+    test "integers", do: validate("Foo.Bar.xyz(1, 9_001, 0xFF)")
+    test "strings", do: validate("Foo.Bar.xyz(\"foo\", \"bar baz\", \"\")")
+    test "binaries", do: validate("Foo.Bar.xyz(<<>>, <<104, 97, 120>>, <<\"wat\">>)")
+    test "charlists", do: validate("Foo.Bar.xyz('', 'foo', 'bar')")
+    test "lists", do: validate("Foo.Bar.xyz([], [_], [1, 2, 3])")
+    test "underscores", do: validate("Foo.Bar.xyz(_, _foo, _bar)")
+    test "variables", do: validate("Foo.Bar.xyz(foo, bar, baz)")
+
     test "complicated case", do: validate("Foo.Bar.xyz(_, [foo], c)")
     test "complicated case with tuples", do: validate("Foo.Bar.xyz({1, 1}, [_], {_, _, _})")
     test "complicated case with tuples 2", do: validate("Foo.Bar.xyz({a, b}, [_], {_, _, _})")
