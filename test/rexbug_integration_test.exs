@@ -32,8 +32,10 @@ defmodule RexbugIntegrationTest do
     test "binaries", do: validate("Foo.Bar.xyz(<<>>, <<104, 97, 120>>, <<\"wat\">>)")
     test "charlists", do: validate("Foo.Bar.xyz('', 'foo', 'bar')")
     test "lists", do: validate("Foo.Bar.xyz([], [_], [1, 2, 3])")
+    test "tuples", do: validate("Foo.Bar.xyz({}, {_, _}, {1, 2, 3})")
     test "underscores", do: validate("Foo.Bar.xyz(_, _foo, _bar)")
     test "variables", do: validate("Foo.Bar.xyz(foo, bar, baz)")
+    test "atoms", do: validate("Foo.Bar.xyz(:foo, :\"bar baz\", :{})")
 
     test "complicated case", do: validate("Foo.Bar.xyz(_, [foo], c)")
     test "complicated case with tuples", do: validate("Foo.Bar.xyz({1, 1}, [_], {_, _, _})")
