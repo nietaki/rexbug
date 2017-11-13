@@ -3,6 +3,73 @@ defmodule Rexbug do
   A thin Elixir wrapper for the redbug Erlang tracing debugger.
   """
 
+  @help_message """
+
+  TODO replace this message copy-pasted from :redbug with the
+  its equivalent for Rexbug
+
+  redbug - the (sensibly) Restrictive Debugger
+
+    redbug:start(Trc) -> start(Trc,[]).
+    redbug:start(Trc,Opts).
+
+    redbug is a tool to interact with the Erlang trace facility.
+    It will instruct the Erlang VM to generate so called
+    'trace messages' when certain events (such as a particular
+    function being called) occur.
+    The trace messages are either printed (i.e. human readable)
+    to a file or to the screen; or written to a trc file.
+    Using a trc file puts less stress on the system, but
+    there is no way to count the messages (so the msgs opt
+    is ignored), and the files can only be read by special tools
+    (such as 'bread'). Printing and trc files cannot be combined.
+    By default (i.e. if the 'file' opt is not given), messages
+    are printed.
+
+  Trc: list('send'|'receive'|string(RTP))
+  RTP:  restricted trace pattern
+    the RTP has the form: "<mfa> when <guards> -> <actions>"
+    where <mfa> can be;
+    "mod", "mod:fun", "mod:fun/3" or "mod:fun('_',atom,X)"
+    <guard> is something like;
+    "X==1" or "is_atom(A)"
+    and <action> is;
+    "return" and/or "stack" (separated by ";")
+
+    E.g.
+    ets:lookup(T,hostname) when is_integer(T) ->stack
+
+  Opts: list({Opt,Val})
+    general opts:
+  time         (15000)       stop trace after this many ms
+  msgs         (10)          stop trace after this many msgs
+  target       (node())      node to trace on
+  cookie       (host cookie) target node cookie
+  blocking     (false)       block start/2, return a list of messages
+  arity        (false)       print arity instead of arg list
+  buffered     (false)       buffer messages till end of trace
+  discard      (false)       discard messages (when counting)
+  max_queue    (5000)        fail if internal queue gets this long
+  max_msg_size (50000)       fail if seeing a msg this big
+  procs        (all)         (list of) Erlang process(es)
+                              all|pid()|atom(RegName)|{pid,I2,I3}
+    print-related opts
+  print_calls  (true)        print calls
+  print_file   (standard_io) print to this file
+  print_msec   (false)       print milliseconds on timestamps
+  print_depth  (999999)      formatting depth for "~P"
+  print_re     ("")          print only strings that match this RE
+  print_return (true)        print the return value
+  print_fun    ()            custom print handler, fun/1 or fun/2;
+                              fun(TrcMsg) -> <ignored>
+                              fun(TrcMsg,AccOld) -> AccNew
+    trc file related opts
+  file         (none)        use a trc file based on this name
+  file_size    (1)           size of each trc file
+  file_count   (8)           number of trc files
+  """
+
+
   alias Rexbug.Translator
 
   @type redbug_non_blocking_return :: {proc_count :: integer, func_count :: integer}
@@ -28,6 +95,9 @@ defmodule Rexbug do
   def start(time, msgs, procs, node, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs, procs: procs, target: node])
 
   @spec start(trace_pattern :: String.t, opts :: Keyword.t) :: rexbug_return
+  @doc """
+  Starts tracing for the given pattern with provided options.
+  """
   def start(trace_pattern, options) do
     with {:ok, options} <- Translator.translate_options(options),
          {:ok, translated} <- Translator.translate(trace_pattern)
@@ -38,11 +108,20 @@ defmodule Rexbug do
 
 
   @spec stop() :: :stopped | :not_started
+  @doc """
+  Stops all tracing.
+  """
   def stop() do
     :redbug.stop()
   end
 
   @spec stop_sync() :: :stopped | :not_started | {:error, :could_not_stop_redbug}
+  @doc """
+  Stops all tracing in a synchronous manner.
+
+  Usually there's no need to use this function over `stop/0`. You might want to use
+  it if you're going to start tracing immediately afterwards in an automated fashion.
+  """
   # kind of relies on redbug internal behaviour, but not really
   def stop_sync(timeout \\ 100) do
     case Process.whereis(:redbug) do
@@ -60,11 +139,16 @@ defmodule Rexbug do
     end
   end
 
-
   @spec help() :: :ok
+  @doc """
+  Prints the following help message to standard output:
+  ```txt
+  """ <>
+    @help_message <>
+    "\n```"
+
   def help() do
-    # TODO replace with own help with elixir syntax
-    :redbug.help()
+    IO.puts(@help_message)
     :ok
   end
 
