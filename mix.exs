@@ -58,8 +58,7 @@ defmodule Rexbug.Mixfile do
       main: "readme",
       source_url: "https://github.com/nietaki/rexbug",
       extras: ["README.md"],
-      assets: [],
-      # assets: ["assets"],
+      assets: ["assets"],
     ]
   end
 

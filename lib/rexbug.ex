@@ -37,19 +37,23 @@ defmodule Rexbug do
   end
 
 
+  @spec stop() :: :stopped | :not_started
   def stop() do
     :redbug.stop()
   end
 
+  @spec stop_sync() :: :stopped | :not_started | {:error, :could_not_stop_redbug}
   # kind of relies on redbug internal behaviour, but not really
   def stop_sync(timeout \\ 100) do
     case Process.whereis(:redbug) do
       nil -> :not_started
       pid ->
         ref = Process.monitor(pid)
-        :redbug.stop()
+        res = :redbug.stop()
         receive do
-          {:DOWN, ^ref, _, _, _} -> :stopped
+          {:DOWN, ^ref, _, _, _} ->
+            :stopped
+            res
         after
           timeout -> {:error, :could_not_stop_redbug}
         end
@@ -57,9 +61,11 @@ defmodule Rexbug do
   end
 
 
+  @spec help() :: :ok
   def help() do
     # TODO replace with own help with elixir syntax
     :redbug.help()
+    :ok
   end
 
 
