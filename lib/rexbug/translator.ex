@@ -9,6 +9,20 @@ defmodule Rexbug.Translator do
   #---------------------------------------------------------------------------
 
   @spec translate(trace_pattern :: String.t) :: {:ok, charlist} | {:error, atom}
+  @doc """
+  Translates the Elixir trace pattern string (understood by Rexbug) to the
+  Erlang trace pattern charlist understood by `:redbug`.
+
+  The translated version is not necessarily the cleanest possible, but should
+  be correct and functionally equivalent.
+
+  ## Example
+      iex> import Rexbug.Translator
+      iex> translate(":cowboy.start_clear/3")
+      {:ok, '\\'cowboy\\':\\'start_clear\\'/3'}
+      iex> translate("MyModule.do_sth(_, [pretty: true])")
+      {:ok, '\\'Elixir.MyModule\\':\\'do_sth\\'(_, [{\\'pretty\\', true}])'}
+  """
 
   def translate(trace_pattern) do
     with {mfag, actions} = split_to_mfag_and_actions!(trace_pattern),
@@ -40,6 +54,7 @@ defmodule Rexbug.Translator do
   end
 
 
+  @doc false
   def split_to_mfag_and_actions!(trace_pattern) do
     {mfag, actions} =
       case String.split(trace_pattern, " ::", parts: 2) do
@@ -55,6 +70,12 @@ defmodule Rexbug.Translator do
   #---------------------------------------------------------------------------
 
   @spec translate_options(Keyword.t) :: {:ok, Keyword.t} | {:error, term}
+  @doc """
+  Translates the options to be passed to `Rexbug.start/2` to the format expected by
+  `:redbug`
+
+  Relevant values passed as strings will be converted to charlists.
+  """
 
   def translate_options(options) when is_list(options) do
     options
