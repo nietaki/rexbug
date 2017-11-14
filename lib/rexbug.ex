@@ -29,7 +29,7 @@ defmodule Rexbug do
     Rexbug.start(trace_pattern, opts \\ [])
     Rexbug.start(time_limit, message_limit, trace_pattern)
 
-  trace_pattern:  "send" | "receive" | rtp | ["send" | "receive" | rtp]
+  trace_pattern:  :send | :receive | rtp | [:send | :receive | rtp]
 
   rtp:  restricted trace pattern
     the rtp has the form: "<mfa> when <guards> :: <actions>"

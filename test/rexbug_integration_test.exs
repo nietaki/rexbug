@@ -47,6 +47,11 @@ defmodule RexbugIntegrationTest do
     test "example from help 4", do: validate("Agent")
     test "example from help 5", do: validate("Map.new/any")
     test "example from help 6", do: validate("Map.new/x")
+
+    test "send", do: validate(:send)
+    test "receive", do: validate(:receive)
+
+    test "multiple trace patterns", do: validate([":ets", ":dets"])
   end
 
   #===========================================================================
