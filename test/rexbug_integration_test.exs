@@ -40,6 +40,13 @@ defmodule RexbugIntegrationTest do
     test "complicated case", do: validate("Foo.Bar.xyz(_, [foo], c)")
     test "complicated case with tuples", do: validate("Foo.Bar.xyz({1, 1}, [_], {_, _, _})")
     test "complicated case with tuples 2", do: validate("Foo.Bar.xyz({a, b}, [_], {_, _, _})")
+
+    test "example from help 1", do: validate(":ets.lookup(t, :hostname)") # TODO add the guard
+    test "example from help 2", do: validate("Map.new/2")
+    test "example from help 3", do: validate("Map.pop(_, :some_key, default)") # TODO add the guard
+    test "example from help 4", do: validate("Agent")
+    test "example from help 5", do: validate("Map.new/any")
+    test "example from help 6", do: validate("Map.new/x")
   end
 
   #===========================================================================

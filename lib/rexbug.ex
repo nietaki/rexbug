@@ -5,17 +5,15 @@ defmodule Rexbug do
 
   @help_message """
 
-  TODO replace this message copy-pasted from :redbug with the
-  its equivalent for Rexbug
+  Rexbug - a thin Elixir wrapper for :redbug - the (sensibly) Restrictive
+  Debugger. It doesn't fork :redbug, only uses it under the hood.
 
-  redbug - the (sensibly) Restrictive Debugger
+  You can use :redbug directly - run :redbug.help() to see its help message.
 
-    redbug:start(Trc) -> start(Trc,[]).
-    redbug:start(Trc,Opts).
-
-    redbug is a tool to interact with the Erlang trace facility.
+  Inner workings:
+    Rexbug is a tool to interact with the Erlang trace facility.
     It will instruct the Erlang VM to generate so called
-    'trace messages' when certain events (such as a particular
+    "trace messages" when certain events (such as a particular
     function being called) occur.
     The trace messages are either printed (i.e. human readable)
     to a file or to the screen; or written to a trc file.
@@ -23,24 +21,40 @@ defmodule Rexbug do
     there is no way to count the messages (so the msgs opt
     is ignored), and the files can only be read by special tools
     (such as 'bread'). Printing and trc files cannot be combined.
-    By default (i.e. if the 'file' opt is not given), messages
+    By default (i.e. if the :file opt is not given), messages
     are printed.
 
-  Trc: list('send'|'receive'|string(RTP))
-  RTP:  restricted trace pattern
-    the RTP has the form: "<mfa> when <guards> -> <actions>"
-    where <mfa> can be;
-    "mod", "mod:fun", "mod:fun/3" or "mod:fun('_',atom,X)"
-    <guard> is something like;
-    "X==1" or "is_atom(A)"
-    and <action> is;
-    "return" and/or "stack" (separated by ";")
+
+  Basic usage:
+    Rexbug.start(trace_pattern, opts \\ [])
+    Rexbug.start(time_limit, message_limit, trace_pattern)
+
+  trace_pattern:  "send" | "receive" | rtp | ["send" | "receive" | rtp]
+
+  rtp:  restricted trace pattern
+    the rtp has the form: "<mfa> when <guards> :: <actions>"
+    where <mfa> can be:
+      "mod", "mod.fun/3", "mod.fun/any" or "mod.fun(_, :atom, x)"
+
+    <guard> is something like:
+      "x==1" or "is_atom(A)"
+
+    and <actions> is:
+      "", "return", "stack", or "return;stack"
 
     E.g.
-    ets:lookup(T,hostname) when is_integer(T) ->stack
+      :ets.lookup(t, :hostname) when is_integer(t) :: stack
+      Map.new/2
+      Map.pop(_, :some_key, default) when default != nil :: return
+      Agent
 
-  Opts: list({Opt,Val})
-    general opts:
+  NOTE: The <mfa> of "Map.new" is equivalent to "Map.new()" - the 0 arity
+  is implied. To trace the function with any arity use "Map.new/any" or
+  simply "Map.new/x".
+
+  opts: Keyword.t
+    general opts (and their default values):
+
   time         (15000)       stop trace after this many ms
   msgs         (10)          stop trace after this many msgs
   target       (node())      node to trace on
@@ -53,7 +67,7 @@ defmodule Rexbug do
   max_msg_size (50000)       fail if seeing a msg this big
   procs        (all)         (list of) Erlang process(es)
                               all|pid()|atom(RegName)|{pid,I2,I3}
-    print-related opts
+    print-related opts:
   print_calls  (true)        print calls
   print_file   (standard_io) print to this file
   print_msec   (false)       print milliseconds on timestamps
@@ -63,7 +77,7 @@ defmodule Rexbug do
   print_fun    ()            custom print handler, fun/1 or fun/2;
                               fun(TrcMsg) -> <ignored>
                               fun(TrcMsg,AccOld) -> AccNew
-    trc file related opts
+    trc file related opts:
   file         (none)        use a trc file based on this name
   file_size    (1)           size of each trc file
   file_count   (8)           number of trc files
