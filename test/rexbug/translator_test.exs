@@ -66,6 +66,24 @@ defmodule Rexbug.TranslatorTest do
     test "invalid arg" do
       assert {:error, _} = translate(":cowboy.do_sth(2 + 3)")
     end
+
+    test "errors out on really unexpected input" do
+      assert {:error, :invalid_trace_pattern_type} = translate(:wat)
+      assert {:error, :invalid_trace_pattern_type} = translate(%{})
+      assert {:error, :invalid_trace_pattern_type} = translate({:foo, "bar"})
+    end
+
+    test "translates send and receive correctly" do
+      assert {:ok, :send} = translate(:send)
+      assert {:ok, :send} = translate("send")
+      assert {:ok, :receive} = translate(:receive)
+      assert {:ok, :receive} = translate("receive")
+    end
+
+    test "translates multiple trace patterns correctly" do
+      assert {:ok, [:send, '\'ets\'']} = translate([:send, ":ets"])
+      assert {:error, :invalid_trace_pattern_type} = translate([:send, ":ets", :wat])
+    end
   end
 
   describe "Translator.translate/1 translating args" do

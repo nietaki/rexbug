@@ -24,7 +24,16 @@ defmodule Rexbug.Translator do
       {:ok, '\\'Elixir.MyModule\\':\\'do_sth\\'(_, [{\\'pretty\\', true}])'}
   """
 
-  def translate(trace_pattern) do
+  def translate(s) when s in [:send, "send"], do: {:ok, :send}
+  def translate(r) when r in [:receive, "receive"], do: {:ok, :receive}
+
+  def translate(patterns) when is_list(patterns) do
+    patterns
+    |> Enum.map(&translate/1)
+    |> collapse_errors()
+  end
+
+  def translate(trace_pattern) when is_binary(trace_pattern) do
     with {mfag, actions} = split_to_mfag_and_actions!(trace_pattern),
          {:ok, quoted} <- Code.string_to_quoted(mfag),
          {:ok, {mfa, guards}} = split_quoted_into_mfa_and_guards(quoted),
@@ -52,6 +61,8 @@ defmodule Rexbug.Translator do
       {:ok, String.to_charlist(translated)}
     end
   end
+
+  def translate(_), do: {:error, :invalid_trace_pattern_type}
 
 
   @doc false
