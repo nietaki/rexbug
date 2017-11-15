@@ -59,12 +59,13 @@ can start debugging it at your convenience.
 If you want to move between `:redbug` and `Rexbug` or you're just curious how
 they compare, here's some examples:
 
-| `redbug` in Erlang | `:redbug` in Elixir | `Rexbug` in Elixir |
+| `Rexbug` in Elixir | `:redbug` in Elixir | `redbug` in Erlang |
 | --- | --- | --- |
-| `redbug:start("ets")` | `:redbug.start('ets')` | `Rexbug.start(":ets")` |
-| `redbug:stop()` | `:redbug.stop()` | `Rexbug.stop()` |
+| `Rexbug.start(":ets")` | `:redbug.start('ets')` |  `redbug:start("ets")` |
+| `Rexbug.stop()` | `:redbug.stop()` | `redbug:stop()` |
 
-* TODO
+
+* TODO (remember to have some cases with strings)
 
 ## Known issues
 
