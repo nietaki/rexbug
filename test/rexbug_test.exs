@@ -18,7 +18,7 @@ defmodule RexbugTest do
     end)
 
     assert String.contains?(output, "<mfa> when <guards> :: <actions>")
-    assert String.contains?(output, "mod.fun/any")
+    assert String.contains?(output, "Mod.fun/_")
   end
 
 end

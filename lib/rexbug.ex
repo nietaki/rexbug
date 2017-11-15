@@ -34,7 +34,7 @@ defmodule Rexbug do
   rtp:  restricted trace pattern
     the rtp has the form: "<mfa> when <guards> :: <actions>"
     where <mfa> can be:
-      "mod", "mod.fun/3", "mod.fun/any" or "mod.fun(_, :atom, x)"
+      "Mod", "Mod.fun/3", "Mod.fun/_" or "Mod.fun(_, :atom, x)"
 
     <guard> is something like:
       "x==1" or "is_atom(A)"
@@ -50,7 +50,7 @@ defmodule Rexbug do
 
   NOTE: The <mfa> of "Map.new" is equivalent to "Map.new()" - the 0 arity
   is implied. To trace the function with any arity use "Map.new/any" or
-  simply "Map.new/x".
+  simply "Map.new/_".
 
   opts: Keyword.t
     general opts (and their default values):
