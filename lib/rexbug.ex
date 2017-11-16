@@ -93,22 +93,26 @@ defmodule Rexbug do
 
   @type rexbug_return :: redbug_non_blocking_return | redbug_blocking_return | redbug_error | rexbug_error
 
+  @type trace_pattern_instance :: String.t | :send | :receive
+
+  @type trace_pattern :: trace_pattern_instance | [trace_pattern_instance]
+
   @type proc  :: pid() | atom | {pid, integer, integer}
   @type procs :: :all | :new | :running | proc | [proc]
 
-  @spec start(trace_pattern :: String.t) :: rexbug_return
+  @spec start(trace_pattern) :: rexbug_return
   def start(trace_pattern), do: start(trace_pattern, [])
 
-  @spec start(time :: integer, msgs :: integer, trace_pattern :: String.t) :: rexbug_return
+  @spec start(time :: integer, msgs :: integer, trace_pattern) :: rexbug_return
   def start(time, msgs, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs])
 
-  @spec start(time :: integer, msgs :: integer, procs :: procs, trace_pattern :: String.t) :: rexbug_return
+  @spec start(time :: integer, msgs :: integer, procs :: procs, trace_pattern) :: rexbug_return
   def start(time, msgs, procs, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs, procs: procs])
 
-  @spec start(time :: integer, msgs :: integer, procs :: procs, node :: node(), trace_pattern :: String.t) :: rexbug_return
+  @spec start(time :: integer, msgs :: integer, procs :: procs, node :: node(), trace_pattern) :: rexbug_return
   def start(time, msgs, procs, node, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs, procs: procs, target: node])
 
-  @spec start(trace_pattern :: String.t, opts :: Keyword.t) :: rexbug_return
+  @spec start(trace_pattern, opts :: Keyword.t) :: rexbug_return
   @doc """
   Starts tracing for the given pattern with provided options.
   """
@@ -155,7 +159,10 @@ defmodule Rexbug do
 
   @spec help() :: :ok
   @doc """
-  Prints the following help message to standard output:
+  Prints the help message / usage manual to standard output.
+
+  The help message is as follows:
+
   ```txt
   """ <>
     @help_message <>

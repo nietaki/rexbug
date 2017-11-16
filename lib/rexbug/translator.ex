@@ -15,7 +15,7 @@ defmodule Rexbug.Translator do
   # Translating trace pattern
   #---------------------------------------------------------------------------
 
-  @spec translate(trace_pattern :: String.t) :: {:ok, charlist} | {:error, atom}
+  @spec translate(Rexbug.trace_pattern) :: {:ok, charlist | atom} | {:ok, [charlist | atom]} | {:error, term}
   @doc """
   Translates the Elixir trace pattern(s) (understood by Rexbug) to the
   Erlang trace pattern charlist(s) understood by `:redbug`.
