@@ -1,6 +1,15 @@
 defmodule Rexbug.Mixfile do
   use Mix.Project
 
+  # RELEASE CHECKLIST
+  # - update the version here
+  # - update "Installation" section in the README with the new version
+  # - check if README is outdated
+  # - make sure there's no obviously missing or outdated docs
+  # - build and publish the hex package
+  #   - mix hex.build
+  #   - mix hex.publish
+
   def project do
     [
       app: :rexbug,
@@ -11,6 +20,8 @@ defmodule Rexbug.Mixfile do
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
       aliases: aliases(),
+      source_url: "https://github.com/nietaki/rexbug",
+
       deps: deps(),
 
       test_coverage: [tool: ExCoveralls],
@@ -59,6 +70,7 @@ defmodule Rexbug.Mixfile do
       source_url: "https://github.com/nietaki/rexbug",
       extras: ["README.md"],
       assets: ["assets"],
+      logo: "assets/rexbug64.png",
     ]
   end
 
@@ -93,7 +105,26 @@ defmodule Rexbug.Mixfile do
 
   defp description do
     """
-    A thin Elixir wrapper for the redbug Erlang tracing debugger.
+    Rexbug is a thin Elixir wrapper for :redbug production-friendly Erlang
+    tracing debugger. It tries to preserve :redbug's simple and intuitive
+    interface while making it more convenient to use by Elixir developers.
+
+    # What does it do?
+
+    It's an Elixir tracing - based debugger. It allows you to connect to a live
+    Elixir system and get information when some code inside it is executed. The
+    "some code" can be a whole module, a specific function in the module, or
+    some function, but only if it's called with some specific arguments. The
+    information you can get is the function arguments, its result and the
+    stack trace.
+
+    If you want to you can narrow the tracing down to a specific process,
+    investigate a remote node or look at the messages sent between processes.
+
+    Rexbug is also production-system-friendly. It has sensible limits for both
+    time and amount of trace events after which it stops tracing. This means
+    you won't accidentally overload the system and flood your console with
+    debug information if your trace pattern wasn't specific enough.
     """
   end
 end
