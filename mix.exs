@@ -108,23 +108,6 @@ defmodule Rexbug.Mixfile do
     Rexbug is a thin Elixir wrapper for :redbug production-friendly Erlang
     tracing debugger. It tries to preserve :redbug's simple and intuitive
     interface while making it more convenient to use by Elixir developers.
-
-    # What does it do?
-
-    It's an Elixir tracing - based debugger. It allows you to connect to a live
-    Elixir system and get information when some code inside it is executed. The
-    "some code" can be a whole module, a specific function in the module, or
-    some function, but only if it's called with some specific arguments. The
-    information you can get is the function arguments, its result and the
-    stack trace.
-
-    If you want to you can narrow the tracing down to a specific process,
-    investigate a remote node or look at the messages sent between processes.
-
-    Rexbug is also production-system-friendly. It has sensible limits for both
-    time and amount of trace events after which it stops tracing. This means
-    you won't accidentally overload the system and flood your console with
-    debug information if your trace pattern wasn't specific enough.
     """
   end
 end
