@@ -1,5 +1,12 @@
 defmodule Rexbug.Translator do
 
+  @moduledoc """
+  Utility module for translating Elixir syntax to the one expected by
+  `:redbug`.
+
+  You probably don't need to use it directly.
+  """
+
   #===========================================================================
   # Public functions
   #===========================================================================
@@ -8,10 +15,10 @@ defmodule Rexbug.Translator do
   # Translating trace pattern
   #---------------------------------------------------------------------------
 
-  @spec translate(trace_pattern :: String.t) :: {:ok, charlist} | {:error, atom}
+  @spec translate(Rexbug.trace_pattern) :: {:ok, charlist | atom} | {:ok, [charlist | atom]} | {:error, term}
   @doc """
-  Translates the Elixir trace pattern string (understood by Rexbug) to the
-  Erlang trace pattern charlist understood by `:redbug`.
+  Translates the Elixir trace pattern(s) (understood by Rexbug) to the
+  Erlang trace pattern charlist(s) understood by `:redbug`.
 
   The translated version is not necessarily the cleanest possible, but should
   be correct and functionally equivalent.
@@ -97,6 +104,10 @@ defmodule Rexbug.Translator do
   def translate_options(_), do: {:error, :invalid_options}
 
 
+  #===========================================================================
+  # Private functions
+  #===========================================================================
+
   @binary_to_charlist_options [:file, :print_file]
 
   defp translate_option({file_option, filename})
@@ -110,10 +121,6 @@ defmodule Rexbug.Translator do
 
   defp translate_option(_), do: {:error, :invalid_options}
 
-
-  #===========================================================================
-  # Private functions
-  #===========================================================================
 
   @spec collapse_errors([{:ok, term} | {:error, term}]) :: {:ok, [term]} | {:error, term}
   defp collapse_errors(tuples) do
