@@ -37,7 +37,7 @@ defmodule Rexbug do
       "Mod", "Mod.fun/3", "Mod.fun/_" or "Mod.fun(_, :atom, x)"
 
     <guard> is something like:
-      "x==1" or "is_atom(A)"
+      "x==1" or "is_atom(a)"
 
     and <actions> is:
       "", "return", "stack", or "return;stack"
@@ -55,7 +55,7 @@ defmodule Rexbug do
   opts: Keyword.t
     general opts (and their default values):
 
-  time         (15000)       stop trace after this many ms
+  time         (15_000)      stop trace after this many ms
   msgs         (10)          stop trace after this many msgs
   target       (Node.self()) node to trace on
   cookie       (host cookie) target node cookie
@@ -63,15 +63,15 @@ defmodule Rexbug do
   arity        (false)       print arity instead of arg list
   buffered     (false)       buffer messages till end of trace
   discard      (false)       discard messages (when counting)
-  max_queue    (5000)        fail if internal queue gets this long
-  max_msg_size (50000)       fail if seeing a msg this big
+  max_queue    (5_000)       fail if internal queue gets this long
+  max_msg_size (50_000)      fail if seeing a msg this big
   procs        (:all)        (list of) Erlang process(es)
-                              :all|pid()|atom(reg_name)|{:pid,i2,i3}
+                              :all|:new|pid()|atom(reg_name)|{:pid,i2,i3}
     print-related opts:
   print_calls  (true)        print calls
   print_file   (standard_io) print to this file
   print_msec   (false)       print milliseconds on timestamps
-  print_depth  (999999)      formatting depth for "~P"
+  print_depth  (999_999)     formatting depth for "~P"
   print_re     ("")          print only messages that match this regex
   print_return (true)        print return value (if "return" action given)
   print_fun    ()            custom print handler, fun/1 or fun/2;
@@ -102,20 +102,125 @@ defmodule Rexbug do
   @type procs :: :all | :new | :running | proc | [proc]
 
   @spec start(trace_pattern) :: rexbug_return
+  @doc """
+  See `Rexbug.start/2`.
+  """
   def start(trace_pattern), do: start(trace_pattern, [])
 
   @spec start(time :: integer, msgs :: integer, trace_pattern) :: rexbug_return
+  @doc """
+  See `Rexbug.start/2`.
+  """
   def start(time, msgs, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs])
 
   @spec start(time :: integer, msgs :: integer, procs :: procs, trace_pattern) :: rexbug_return
+  @doc """
+  See `Rexbug.start/2`.
+  """
   def start(time, msgs, procs, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs, procs: procs])
 
   @spec start(time :: integer, msgs :: integer, procs :: procs, node :: node(), trace_pattern) :: rexbug_return
+  @doc """
+  See `Rexbug.start/2`.
+  """
   def start(time, msgs, procs, node, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs, procs: procs, target: node])
 
   @spec start(trace_pattern, opts :: Keyword.t) :: rexbug_return
   @doc """
   Starts tracing for the given pattern with provided options.
+
+  If successful and `:blocking` option is not specified, returns a tuple
+  where the first element is the count of targeted processes and the
+  second element is the count of targeted functions
+
+  # Trace Pattern
+  The `trace_pattern` is a string (binary) describing which function(s)
+  should be traced.
+
+  The `trace_pattern` has the `"<mfa> when <guards> :: <actions>"` form,
+  where guards and actions are optional and &lt;mfa&gt; can be in the form of
+  `Mod`, `Mod.fun/3`, `Mod.fun/_` or `Mod.fun(_, :atom, x)`
+
+  Most normal [Elixir guards](https://hexdocs.pm/elixir/master/guards.html)
+  are valid as &lt;guards&gt;, so something like
+  `x==1` or `is_atom(x)` or `is_integer(i) and i > 0` would work.
+
+  The valid &lt;actions&gt; are: `return`, `stack`, or `return;stack`
+
+  Apart from tracing function calls you can trace sent and received messages.
+  To do so specify `:send` or `:receive` as the trace pattern.
+
+  You can also specify multiple trace patterns by providing a list of them
+  as the first argument.
+
+  # Options
+
+  There's a range of options that modify the behaviour of `Rexbug`.
+
+
+  ## General options
+
+  | option | default&nbsp;value | meaning |
+  | --- | --- | --- |
+  | time | `15_000` | stop tracing after this many milliseconds |
+  | msgs | `10` | stop tracing after this many messages |
+  | target | `Node.self()` | node to trace on |
+  | cookie | host cookie | target node cookie |
+  | blocking | `false` | block on `start/2` and return a list of messages. [see comment](#start/2-blocking) |
+  | arity | `false` | print arity instead of argument list |
+  | buffered | `false` | buffer messages till end of trace |
+  | discard | `false` | discard messages (when counting) |
+  | max_queue | `5_000` | fail if internal queue gets this long |
+  | max\_msg\_size | `50_000` | fail if seeing a message this big |
+  | procs | `:all` | (list of) Erlang process(es) to include when tracing. [see comment](#start/2-procs) |
+
+  ## Print-related options
+  | option | default&nbsp;value | meaning |
+  | --- | --- | --- |
+  | print_calls | `true` | print calls |
+  | print_file | standard_io | if provided, prints messages to the specified file |
+  | print_msec | `false` | print milliseconds on timestamps |
+  | print_depth | `999_999` | formatting depth for `"~P"` |
+  | print_re | `""` | print only messages that match this regex |
+  | print_return | `true` | if set to `false`, won't print the return values. Relevant only if `return` action is specified |
+  | print_fun | none | Custom print handler. [see comment](#start/2-print_fun) |
+
+  ## Trace file related options
+
+  | option | default&nbsp;value | meaning |
+  | --- | --- | --- |
+  | file | none | use a trc file based on this name |
+  | file_size | `1` | size of each trc file |
+  | file_count | `8` | number of trc files |
+
+  ## Options comments
+
+  ### `:blocking`
+
+  If set to true, instead of printing traces to stdio, `Rexbug.start/2` will block
+  and return a list of trace messages when it's done tracing.
+
+  ### `:procs`
+
+  Which processes to trace. The possible values are `:all` for all processes,
+  `:new` for just the ones spawned after the tracing has started,
+  an atom for registered processes, or a pid. The pid can either be a PID
+  literal or a `{:pid, x, y}`, where `x` and `y` are the latter 2 integers from
+  the PID representation. So for example `#PID<0.150.0>` could be expressed with
+  `{:pid, 150, 0}`.
+
+  The first integer from the PID representation is omitted, because it represents
+  the node number. You can use the `target` option to specify a remote node instead.
+
+  You can provide either a single process or a list of procs to trace.
+
+  ### `:print_fun`
+
+  Custom function to use to print the trace messages.
+
+  The function can be in the `fun(trace_msg :: term) :: <ignored>` format
+  or the `fun(trace_msg, acc_old) :: acc_new` format. If you use the latter format,
+  the initial accumulator will be `0`.
   """
   def start(trace_pattern, options) do
     with {:ok, options} <- Translator.translate_options(options),
@@ -134,7 +239,7 @@ defmodule Rexbug do
     :redbug.stop()
   end
 
-  @spec stop_sync() :: :stopped | :not_started | {:error, :could_not_stop_redbug}
+  @spec stop_sync(integer) :: :stopped | :not_started | {:error, :could_not_stop_redbug}
   @doc """
   Stops all tracing in a synchronous manner.
 
