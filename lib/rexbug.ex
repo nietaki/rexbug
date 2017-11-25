@@ -57,7 +57,7 @@ defmodule Rexbug do
 
   time         (15000)       stop trace after this many ms
   msgs         (10)          stop trace after this many msgs
-  target       (node())      node to trace on
+  target       (Node.self()) node to trace on
   cookie       (host cookie) target node cookie
   blocking     (false)       block start/2, return a list of messages
   arity        (false)       print arity instead of arg list
@@ -65,18 +65,19 @@ defmodule Rexbug do
   discard      (false)       discard messages (when counting)
   max_queue    (5000)        fail if internal queue gets this long
   max_msg_size (50000)       fail if seeing a msg this big
-  procs        (all)         (list of) Erlang process(es)
-                              all|pid()|atom(RegName)|{pid,I2,I3}
+  procs        (:all)        (list of) Erlang process(es)
+                              :all|pid()|atom(reg_name)|{:pid,i2,i3}
     print-related opts:
   print_calls  (true)        print calls
   print_file   (standard_io) print to this file
   print_msec   (false)       print milliseconds on timestamps
   print_depth  (999999)      formatting depth for "~P"
-  print_re     ("")          print only strings that match this RE
-  print_return (true)        print the return value
+  print_re     ("")          print only messages that match this regex
+  print_return (true)        print return value (if "return" action given)
   print_fun    ()            custom print handler, fun/1 or fun/2;
-                              fun(TrcMsg) -> <ignored>
-                              fun(TrcMsg,AccOld) -> AccNew
+                              fun(trace_msg :: term) :: <ignored>
+                              fun(trace_msg, acc_old) :: acc_new
+                             (where initial accumulator is 0)
     trc file related opts:
   file         (none)        use a trc file based on this name
   file_size    (1)           size of each trc file
