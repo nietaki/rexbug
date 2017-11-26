@@ -159,7 +159,64 @@ Rexbug.start("Map.new/_ :: return;stack")
 
 <!-- ### How do I use it with my mix project? -->
 
-<!-- ### How do I use it on an already running system? -->
+### My app is already running and it doesn't have Rexbug in its dependencies. Can I still debug it?
+
+Yes! You can connect to it from a node that has Rexbug in its path and work from there.
+
+The app:
+
+```iex
+nietaki@shiny:~$ iex --sname production --cookie monster
+Erlang/OTP 20 [erts-9.0] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:10] [hipe] [kernel-poll:false]
+
+Interactive Elixir (1.4.5) - press Ctrl+C to exit (type h() ENTER for help)
+iex(production@shiny)1> Rexbug.help() # the node doesn't know about Rexbug
+** (UndefinedFunctionError) function Rexbug.help/0 is undefined (module Rexbug is not available)
+    Rexbug.help()
+iex(production@shiny)2> Stream.interval(1000) |> Enum.each(&Integer.mod(&1, 3))
+
+```
+
+Your local shell:
+
+```iex
+nietaki@shiny:~$ iex --sname investigator --cookie monster -pa ~/repos/rexbug/_build/dev/lib/rexbug/ebin/ -pa ~/repos/rexbug/_build/dev/lib/redbug/ebin/
+Erlang/OTP 20 [erts-9.0] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:10] [hipe] [kernel-poll:false]
+
+Interactive Elixir (1.4.5) - press Ctrl+C to exit (type h() ENTER for help)
+iex(investigator@shiny)1> opts = [target: :production@shiny, msgs: 4]
+[target: :production@shiny, msgs: 4]
+iex(investigator@shiny)2> Rexbug.start("Integer.mod/2", opts)
+{63, 1}
+
+% 23:53:44 <9548.89.0>({'Elixir.IEx.Evaluator',init,4})
+% 'Elixir.Integer':mod(46, 3)
+
+% 23:53:45 <9548.89.0>({'Elixir.IEx.Evaluator',init,4})
+% 'Elixir.Integer':mod(47, 3)
+
+% 23:53:46 <9548.89.0>({'Elixir.IEx.Evaluator',init,4})
+% 'Elixir.Integer':mod(48, 3)
+
+% 23:53:47 <9548.89.0>({'Elixir.IEx.Evaluator',init,4})
+% 'Elixir.Integer':mod(49, 3)
+redbug done, msg_count - 4
+iex(investigator@shiny)3>
+```
+
+Instead of pointing to the `Rexbug` and `:redbug` beam files you can just clone 
+this repo and run `iex -S mix` in the root directory:
+
+```iex
+nietaki@shiny:rexbug (master=)$ iex --sname investigator --cookie monster -S mix
+Erlang/OTP 19 [erts-8.3] [source] [64-bit] [smp:8:8] [async-threads:10] [hipe] [kernel-poll:false]
+
+Interactive Elixir (1.4.4) - press Ctrl+C to exit (type h() ENTER for help)
+iex(investigator@shiny)1> opts = [target: :production@shiny, msgs: 4]
+[target: :production@shiny, msgs: 4]
+iex(investigator@shiny)2> Rexbug.start("Integer.mod/2", opts)
+(...)
+```
 
 ### How does Rexbug compare with other Elixir debuggers?
 
