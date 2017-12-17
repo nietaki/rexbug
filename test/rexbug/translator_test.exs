@@ -173,6 +173,62 @@ defmodule Rexbug.TranslatorTest do
   end
 
 
+  describe "Translator.translate/1 translating guards" do
+    test "a simple is_integer()" do
+      res = translate(":erlang.term_to_binary(x) when is_integer(x)")
+      assert {:ok, '\'erlang\':\'term_to_binary\'(X) when is_integer(X)'} == res
+    end
+
+    test "a simple is_integer() with a helper function" do
+      assert_guards('is_integer(X)', "is_integer(x)")
+    end
+
+    test "a simple guard negation is_integer() with a helper function" do
+      assert_guards('not is_integer(X)', "not is_integer(x)")
+    end
+
+
+    test "alternative of two guards" do
+      assert_guards('(is_integer(X) orelse is_float(X))', "is_integer(x) or is_float(x)")
+    end
+
+    test "comparison in guards" do
+      assert_guards('X =< Y', "x <= y")
+    end
+
+    test "complex case" do
+      assert_guards('(X =< Y andalso not is_float(X))', "x <= y and not is_float(x)")
+    end
+
+    test "another complex case" do
+      assert_guards('map_size(X) < 1', "map_size(x) < 1")
+    end
+
+    test "invalid guard argument" do
+      assert_guards_error("is_integer(x + y)")
+    end
+
+    test "invalid guard function" do
+      assert_guards_error("not_a_guard_function(x)")
+    end
+
+    test "invalid argument for in-guard comparison" do
+      assert_guards_error("foo(x) < y")
+      assert_guards_error("x >= bar(y)")
+    end
+
+    test "invalid guard in multiple guards" do
+      assert_guards_error("foo(x) and is_integer(y)")
+      assert_guards_error("is_binary(x) and bar(y)")
+    end
+
+    test "operator precedence" do
+      assert_guards('((is_nil(X) andalso is_nil(Y)) orelse is_nil(Z))', "is_nil(x) and is_nil(y) or is_nil(z)")
+      assert_guards('(is_nil(X) orelse (is_nil(Y) andalso is_nil(Z)))', "is_nil(x) or is_nil(y) and is_nil(z)")
+    end
+  end
+
+
   defp assert_args(expected, input) do
     input = ":a.b(#{input}, 0)"
     assert {:ok, '\'a\':\'b\'(' ++ expected ++ ', 0)'} == translate(input)
@@ -181,6 +237,18 @@ defmodule Rexbug.TranslatorTest do
 
   defp assert_args_error(input) do
     input = ":a.b(#{input}, 0)"
+    assert {:error, _} = translate(input)
+  end
+
+
+  defp assert_guards(expected, input) do
+    input = ":a.b(x, y, z) when #{input}"
+    assert {:ok, '\'a\':\'b\'(X, Y, Z) when ' ++ expected} == translate(input)
+  end
+
+
+  defp assert_guards_error(input) do
+    input = ":a.b(x, y, z) when #{input}"
     assert {:error, _} = translate(input)
   end
 
