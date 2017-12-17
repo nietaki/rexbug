@@ -40,7 +40,6 @@ defmodule Rexbug.Translator do
     :size,
   ]
 
-  # this is a simplification, but it should work well enough
   @infix_guards_mapping %{
     # comparison
     :"==" => :"==",

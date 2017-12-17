@@ -226,6 +226,11 @@ defmodule Rexbug.TranslatorTest do
       assert_guards('((is_nil(X) andalso is_nil(Y)) orelse is_nil(Z))', "is_nil(x) and is_nil(y) or is_nil(z)")
       assert_guards('(is_nil(X) orelse (is_nil(Y) andalso is_nil(Z)))', "is_nil(x) or is_nil(y) and is_nil(z)")
     end
+
+    test "nil translation" do
+      assert_guards('X /= nil', "x != nil")
+      assert_guards('not is_nil(X)', "not is_nil(x)")
+    end
   end
 
 
