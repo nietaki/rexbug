@@ -41,9 +41,9 @@ defmodule RexbugIntegrationTest do
     test "complicated case with tuples", do: validate("Foo.Bar.xyz({1, 1}, [_], {_, _, _})")
     test "complicated case with tuples 2", do: validate("Foo.Bar.xyz({a, b}, [_], {_, _, _})")
 
-    test "example from help 1", do: validate(":ets.lookup(t, :hostname)") # TODO add the guard
+    test "example from help 1", do: validate(":ets.lookup(t, :hostname) when is_integer(t)")
     test "example from help 2", do: validate("Map.new/2")
-    test "example from help 3", do: validate("Map.pop(_, :some_key, default)") # TODO add the guard
+    test "example from help 3", do: validate("Map.pop(_, :some_key, default) when default != nil")
     test "example from help 4", do: validate("Agent")
     test "example from help 5", do: validate("Map.new/any")
     test "example from help 6", do: validate("Map.new/x")
@@ -54,19 +54,87 @@ defmodule RexbugIntegrationTest do
     test "multiple trace patterns", do: validate([":ets", ":dets"])
   end
 
+  describe "actual integration tests" do
+    test "simple case" do
+      trigger = fn -> Foo.Bar.abc() end
+      assert_triggers(trigger, "Foo.Bar.abc()")
+    end
+
+    test "simple case with erlang" do
+      assert_triggers(&:ets.all/0, ":ets.all()")
+    end
+
+    test "simple case with guards" do
+      trigger = fn -> Foo.Bar.xyz(1, "b", [3, :four]) end
+      assert_triggers(trigger, "Foo.Bar.xyz/_")
+      assert_triggers(trigger, "Foo.Bar.xyz(1, _, _)")
+      refute_triggers(trigger, "Foo.Bar.xyz(13, _, _)")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, _, _) when x == 1")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, _, _) when x <= 1")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, _, _) when is_integer(x) and x > 0")
+    end
+
+    test "list manipulation in guards" do
+      trigger = fn -> Foo.Bar.xyz(1, "b", [3, :four]) end
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_, _])")
+      refute_triggers(trigger, "Foo.Bar.xyz(_, _, [])")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, ls) when is_list(ls)")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, ls) when is_list(ls) and hd(ls) == 3")
+
+      # here b isn't even a list, but everything works ok
+      refute_triggers(trigger, "Foo.Bar.xyz(_, b, _) when hd(b) == :wat")
+      refute_triggers(trigger, "Foo.Bar.xyz(_, _, [_, :wat])")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_, :four])")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, ls) when tl(ls) == [:four]")
+    end
+  end
+
   #===========================================================================
   # Utility functions
   #===========================================================================
 
   defp validate(elixir_invocation, options \\ []) do
-    options = [time: 20] ++ options
+    options = [time: 20, procs: [self()]] ++ options
     capture_io(fn ->
-      assert {x, y} = res = Rexbug.start(elixir_invocation, options)
-      case {is_integer(x), is_integer(y)} do
-        {true, true} -> :all_good
-        _ -> flunk(inspect(res) <> " returned by Rexbug.start()" )
+      assert {1, y} = res = Rexbug.start(elixir_invocation, options)
+      case is_integer(y) do
+        true ->
+          :all_good
+        _ ->
+          flunk(inspect(res) <> " returned by Rexbug.start()" )
       end
       assert stop_safely()
+    end)
+  end
+
+
+  defp refute_triggers(trigger_fun, spec) do
+    assert_triggers(trigger_fun, spec, false)
+  end
+
+
+  defp assert_triggers(trigger_fun, spec, should_trigger \\ true)
+  when is_function(trigger_fun, 0) and is_binary(spec) do
+    capture_io(fn ->
+      me = self()
+      tell_me = fn(msg) -> send me, {:triggered, msg} end
+      options = [time: 100, procs: [me], print_fun: tell_me]
+      assert {1, _} = Rexbug.start(spec, options)
+      trigger_fun.()
+      triggered =
+        receive do
+          {:triggered, _msg} ->
+            Rexbug.stop_sync()
+            true
+        after
+          50 ->
+            Rexbug.stop_sync()
+            false
+        end
+      case should_trigger do
+        true -> assert(triggered, "the function should trigger `#{spec}`, but it didn't")
+        false -> assert(!triggered, "the function shouldn't trigger `#{spec}`, but it did")
+      end
     end)
   end
 

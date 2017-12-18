@@ -147,8 +147,6 @@ Rexbug.start("Map.new/_ :: return;stack")
 
 ## Known issues/limitations
 
-- Guards aren't supported, but should be soon - 
-  [relevant issue](https://github.com/nietaki/rexbug/issues/1)
 - It's not possible to pattern match on maps in the function args - 
   I'm reasonably sure it's a [limitation of `:redbug`](https://github.com/massemanet/redbug/issues/2)
 - In the trace patterns `"Mod.fun"` implicitly translates to `"Mod.fun()"`, which

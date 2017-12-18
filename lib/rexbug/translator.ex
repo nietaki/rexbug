@@ -7,6 +7,62 @@ defmodule Rexbug.Translator do
   You probably don't need to use it directly.
   """
 
+
+  @valid_guard_functions [
+    :is_atom,
+    :is_binary,
+    :is_bitstring,
+    :is_boolean,
+    :is_float,
+    :is_function,
+    :is_integer,
+    :is_list,
+    :is_map,
+    :is_nil,
+    :is_number,
+    :is_pid,
+    :is_port,
+    :is_reference,
+    :is_tuple,
+
+    :abs,
+    :bit_size,
+    :byte_size,
+    :hd,
+    :length,
+    :map_size,
+    :round,
+    :tl,
+    :trunc,
+    :tuple_size,
+
+    # erlang guard
+    :size,
+  ]
+
+  @infix_guards_mapping %{
+    # comparison
+    :"==" => :"==",
+    :"!=" => :"/=",
+    :"===" => :"=:=",
+    :"!==" => :"=/=",
+    :">" => :">",
+    :">=" => :">=",
+    :"<" => :"<",
+    :"<=" => :"=<",
+   }
+
+  @valid_infix_guards Map.keys(@infix_guards_mapping)
+
+
+  @infix_guard_combinators_mapping %{
+    :and => :andalso,
+    :or => :orelse,
+  }
+
+  @valid_infix_guard_combinators Map.keys(@infix_guard_combinators_mapping)
+
+
   #===========================================================================
   # Public functions
   #===========================================================================
@@ -51,6 +107,7 @@ defmodule Rexbug.Translator do
          {:ok, translated_function} <- translate_function(function),
          {:ok, translated_args} <- translate_args(args),
          {:ok, translated_arity} <- translate_arity(arity),
+         {:ok, translated_guards} <- translate_guards(guards),
          translated_actions = translate_actions!(actions)
       do
       translated =
@@ -63,7 +120,7 @@ defmodule Rexbug.Translator do
             "#{translated_module}#{translated_function}/#{arity}#{translated_actions}"
           nil ->
             # args present, no arity
-            "#{translated_module}#{translated_function}#{translated_args}#{translated_actions}"
+            "#{translated_module}#{translated_function}#{translated_args}#{translated_guards}#{translated_actions}"
         end
       {:ok, String.to_charlist(translated)}
     end
@@ -81,6 +138,13 @@ defmodule Rexbug.Translator do
       end
 
     {String.trim(mfag), String.trim(actions)}
+  end
+
+  @spec translate_guards(term) :: {:ok, String.t} | {:error, term}
+  defp translate_guards(nil), do: {:ok, ""}
+  defp translate_guards(els) do
+    _translate_guards(els)
+    |> map_success(fn(guards) -> " when #{guards}" end)
   end
 
   #---------------------------------------------------------------------------
@@ -339,6 +403,53 @@ defmodule Rexbug.Translator do
     " -> #{actions}"
   end
 
+
+  #---------------------------------------------------------------------------
+  # Guards
+  #---------------------------------------------------------------------------
+
+  @spec _translate_guards(term) :: {:ok, String.t} | {:error, term}
+  defp _translate_guards({:not, _line, [arg]}) do
+    _translate_guards(arg)
+    |> map_success(fn(guard) -> "not #{guard}" end)
+  end
+
+  defp _translate_guards({combinator, _line, [a, b]})
+  when combinator in @valid_infix_guard_combinators do
+    erlang_combinator = @infix_guard_combinators_mapping[combinator]
+    |> Atom.to_string
+    with {:ok, a_guards} <- _translate_guards(a),
+         {:ok, b_guards} <- _translate_guards(b),
+    do: {:ok, "(#{a_guards} #{erlang_combinator} #{b_guards})"}
+  end
+
+  defp _translate_guards(els), do: translate_guard(els)
+
+
+  @spec translate_guard(term) :: {:ok, String.t} | {:error, term}
+  defp translate_guard({guard_fun, _line, args})
+  when guard_fun in @valid_guard_functions do
+    with translated_fun = Atom.to_string(guard_fun),
+         {:ok, translated_args} <- translate_args(args),
+    do:  {:ok, "#{translated_fun}#{translated_args}"}
+  end
+
+  defp translate_guard({infix_guard_fun, _line, [a, b]})
+  when infix_guard_fun in @valid_infix_guards do
+    translated_infix_function = @infix_guards_mapping[infix_guard_fun]
+    |> Atom.to_string()
+    with {:ok, a_guard} <- translate_guard(a),
+         {:ok, b_guard} <- translate_guard(b),
+    do:  {:ok, "#{a_guard} #{translated_infix_function} #{b_guard}"}
+  end
+
+  defp translate_guard(els) do
+    translate_arg(els)
+  end
+
+  #---------------------------------------------------------------------------
+  # Helper functions
+  #---------------------------------------------------------------------------
 
   defp map_success({:ok, var}, fun) do
     {:ok, fun.(var)}
