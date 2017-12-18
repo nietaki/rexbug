@@ -9,7 +9,6 @@ defmodule Rexbug.Translator do
 
 
   @valid_guard_functions [
-    :is_alive,
     :is_atom,
     :is_binary,
     :is_bitstring,
@@ -25,6 +24,7 @@ defmodule Rexbug.Translator do
     :is_port,
     :is_reference,
     :is_tuple,
+
     :abs,
     :bit_size,
     :byte_size,
