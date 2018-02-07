@@ -147,11 +147,11 @@ Rexbug.start("Map.new/_ :: return;stack")
 
 ## Known issues/limitations
 
-- It's not possible to pattern match on maps in the function args - 
-  I'm reasonably sure it's a [limitation of `:redbug`](https://github.com/massemanet/redbug/issues/2)
 - In the trace patterns `"Mod.fun"` implicitly translates to `"Mod.fun()"`, which
   is equivalent to `"Mod.fun/0"`. To target the function with any arity, use 
   `"Mod.fun/_"` or `"Mod.fun/any"` 
+- ~It's not possible to pattern match on maps in the function args -
+  I'm reasonably sure it's a [limitation of `:redbug`](https://github.com/massemanet/redbug/issues/2)~ **FIXED!**
 
 ## FAQ
 

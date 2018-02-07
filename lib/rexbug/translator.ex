@@ -198,6 +198,7 @@ defmodule Rexbug.Translator do
     end
   end
 
+
   defp split_quoted_into_mfa_and_guards({:when, _line, [mfa, guards]}) do
    {:ok, {mfa, guards}}
   end
@@ -336,6 +337,35 @@ defmodule Rexbug.Translator do
     {:error, {:bad_type, :float}}
   end
 
+
+  defp translate_arg({:%{}, _line, kvs}) when is_list(kvs) do
+    {ks, vs} = Enum.unzip(kvs)
+
+    if Enum.any?(ks, &is_variable/1) do
+      {:error, :variable_in_map_key}
+    else
+      key_args = ks
+      |> Enum.map(&translate_arg/1)
+      |> collapse_errors()
+
+      value_args = vs
+      |> Enum.map(&translate_arg/1)
+      |> collapse_errors()
+
+      [key_args, value_args]
+      |> collapse_errors
+      |> map_success(fn [keys, values] ->
+        middle = keys
+        |> Enum.zip(values)
+        |> Enum.map(fn {k, v} -> "#{k} => #{v}" end)
+        |> Enum.join(", ")
+
+        "\#{#{middle}}"
+      end)
+    end
+  end
+
+
   # there's a catch here:
   # iex(12)> Code.string_to_quoted!("{1,2,3}")
   # {:{}, [line: 1], [1, 2, 3]}
@@ -362,6 +392,10 @@ defmodule Rexbug.Translator do
   defp translate_arg(arg) do
     {:error, {:invalid_arg, arg}}
   end
+
+
+  defp is_variable({var, _line, nil}) when is_atom(var), do: true
+  defp is_variable(_), do: false
 
 
   defp translate_binary_element(i) when is_integer(i) do
