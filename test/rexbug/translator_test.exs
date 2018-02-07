@@ -139,6 +139,17 @@ defmodule Rexbug.TranslatorTest do
       assert_args_error("[3, -a]")
       assert_args_error("[3, -:foo.bar()]")
     end
+
+    test "maps" do
+      assert_args('\#{1 => One, \'two\' => 2}', "%{1 => one, :two => 2}")
+      assert_args('\#{\'name\' => _}', "%{name: _}")
+      assert_args('\#{}', "%{}")
+      assert_args('\#{\'foo\' => \#{1 => _}}', "%{foo: %{1 => _}}")
+    end
+
+    test "maps with invalid matching of variable in the key" do
+      assert_args_error("%{name => _}")
+    end
   end
 
 
