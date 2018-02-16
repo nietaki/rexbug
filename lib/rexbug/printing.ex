@@ -16,7 +16,9 @@ defmodule Rexbug.Printing do
 
 
     def represent(a) when is_atom(a) do
-      inspect (a)
+      a
+      |> Atom.to_string()
+      |> String.upcase()
     end
 
     def represent(%__MODULE__{m: m, f: f, a: a}) do
@@ -25,6 +27,7 @@ defmodule Rexbug.Printing do
         erlang_module -> ":#{erlang_module}"
       end
 
+      # TODO use a version of inspect that doesn't truncate stuff
       arep = if is_list(a) do
         middle = a
         |> Enum.map(&inspect/1)
@@ -69,35 +72,36 @@ defmodule Rexbug.Printing do
       :info,
       :from_pid,
       :from_mfa,
-      :time
+      :time,
     ]
 
-    # {
-    #   :call,
-    #   {
-    #     {URI, :parse, ["https://example.com"]},
-    #     ""
-    #   },
-    #   {PID<0.150.0>, {IEx.Evaluator, :init, 4}},
-    #     {21, 49, 20, 152927}
-    # }
-    def from_erl({:call, {mfa, info}, {from_pid, from_mfa}, time}) do
-      %__MODULE__{
-        mfa: MFA.from_erl(mfa),
-        info: info,
-        from_pid: from_pid,
-        from_mfa: MFA.from_erl(from_mfa),
-        time: Timestamp.from_erl(time)
-      }
-    end
-
-    def represent(%__MODULE__{} = call) do
-      ts = Timestamp.represent(call.time)
-      pid = inspect(call.from_pid)
-      from_mfa = MFA.represent(call.from_mfa)
-      mfa = MFA.represent(call.mfa)
+    def represent(%__MODULE__{} = struct) do
+      ts = Timestamp.represent(struct.time)
+      pid = inspect(struct.from_pid)
+      from_mfa = MFA.represent(struct.from_mfa)
+      mfa = MFA.represent(struct.mfa)
 
       "# #{ts} #{pid} #{from_mfa}\n# #{mfa}"
+    end
+  end
+
+  defmodule Return do
+    defstruct [
+      :mfa,
+      :return_value,
+      :from_pid,
+      :from_mfa,
+      :time,
+    ]
+
+    def represent(%__MODULE__{} = struct) do
+      ts = Timestamp.represent(struct.time)
+      pid = inspect(struct.from_pid)
+      from_mfa = MFA.represent(struct.from_mfa)
+      mfa = MFA.represent(struct.mfa)
+      retn = inspect(struct.return_value)
+
+      "# #{ts} #{pid} #{from_mfa}\n# #{mfa} -> #{retn}"
     end
   end
 
@@ -123,16 +127,55 @@ defmodule Rexbug.Printing do
   # Private Functions
   #===========================================================================
 
-  defp from_erl({:call, _, _, _} = call) do
-    Call.from_erl(call)
+  # {
+  #   :call,
+  #   {
+  #     {URI, :parse, ["https://example.com"]},
+  #     ""
+  #   },
+  #   {PID<0.150.0>, {IEx.Evaluator, :init, 4}},
+  #     {21, 49, 20, 152927}
+  # }
+  def from_erl({:call, {mfa, info}, {from_pid, from_mfa}, time}) do
+    %Call{
+      mfa: MFA.from_erl(mfa),
+      info: info,
+      from_pid: from_pid,
+      from_mfa: MFA.from_erl(from_mfa),
+      time: Timestamp.from_erl(time)
+    }
   end
 
-  defp from_erl(other) do
+  # {
+  #   :retn,
+  #   {
+  #    {URI, :parse, 1},
+  #     %URI{authority: "example.com", fragment: nil, host: "example.com", path: nil,
+  #          port: 443, query: nil, scheme: "https", userinfo: nil}
+  #   },
+  #   {
+  #     #PID<0.194.0>,
+  #     :dead
+  #   },
+  #   {21, 53, 7, 178179}
+  # }
+
+  def from_erl({:retn, {mfa, retn}, {from_pid, from_mfa}, time}) do
+    %Return{
+      mfa: MFA.from_erl(mfa),
+      return_value: retn,
+      from_pid: from_pid,
+      from_mfa: MFA.from_erl(from_mfa),
+      time: Timestamp.from_erl(time),
+    }
+  end
+
+  def from_erl(other) do
     other
   end
 
 
-  defp represent(%mod{} = struct) when mod in [Call] do
+  defp represent(%mod{} = struct) when mod in [Call, Return] do
     mod.represent(struct)
   end
 

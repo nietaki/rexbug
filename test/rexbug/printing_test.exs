@@ -16,6 +16,23 @@ defmodule Rexbug.PrintingTest do
       }
       assert "# 21:49:02 #PID<0.150.0> IEx.Evaluator.init/4\n# URI.parse(\"https://example.com\")" == Printing.format(msg)
     end
+
+    test "sample return message" do
+      msg = {
+        :retn,
+        {
+          {:erlang, :binary_to_term, 1},
+          {:foo, "bar", 1}
+        },
+        {
+          :c.pid(0, 194, 0),
+          :dead
+        },
+        {21, 53, 7, 178179}
+      }
+
+      assert "# 21:53:07 #PID<0.194.0> DEAD\n# :erlang.binary_to_term/1 -> {:foo, \"bar\", 1}" == Printing.format(msg)
+    end
   end
 
 end
