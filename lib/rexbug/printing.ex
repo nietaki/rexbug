@@ -1,4 +1,11 @@
 defmodule Rexbug.Printing do
+
+  import Rexbug.Printing.Utils
+
+  #===========================================================================
+  # Helper Structs
+  #===========================================================================
+
   defmodule MFA do
     defstruct [
       :m,
@@ -27,10 +34,9 @@ defmodule Rexbug.Printing do
         erlang_module -> ":#{erlang_module}"
       end
 
-      # TODO use a version of inspect that doesn't truncate stuff
       arep = if is_list(a) do
         middle = a
-        |> Enum.map(&inspect/1)
+        |> Enum.map(&printing_inspect/1)
         |> Enum.join(", ")
         "(#{middle})"
       else
@@ -59,14 +65,16 @@ defmodule Rexbug.Printing do
     end
   end
 
-  # :call, :retn, :send, :recv
+  #---------------------------------------------------------------------------
+  # Received message types
+  #---------------------------------------------------------------------------
 
   defmodule Call do
     defstruct ~w(mfa info from_pid from_mfa time)a
 
     def represent(%__MODULE__{} = struct) do
       ts = Timestamp.represent(struct.time)
-      pid = inspect(struct.from_pid)
+      pid = printing_inspect(struct.from_pid)
       from_mfa = MFA.represent(struct.from_mfa)
       mfa = MFA.represent(struct.mfa)
 
@@ -79,10 +87,10 @@ defmodule Rexbug.Printing do
 
     def represent(%__MODULE__{} = struct) do
       ts = Timestamp.represent(struct.time)
-      pid = inspect(struct.from_pid)
+      pid = printing_inspect(struct.from_pid)
       from_mfa = MFA.represent(struct.from_mfa)
       mfa = MFA.represent(struct.mfa)
-      retn = inspect(struct.return_value)
+      retn = printing_inspect(struct.return_value)
 
       "# #{ts} #{pid} #{from_mfa}\n# #{mfa} -> #{retn}"
     end
@@ -93,11 +101,11 @@ defmodule Rexbug.Printing do
 
     def represent(%__MODULE__{} = struct) do
       ts = Timestamp.represent(struct.time)
-      to_pid = inspect(struct.to_pid)
+      to_pid = printing_inspect(struct.to_pid)
       to_mfa = MFA.represent(struct.to_mfa)
-      from_pid = inspect(struct.from_pid)
+      from_pid = printing_inspect(struct.from_pid)
       from_mfa = MFA.represent(struct.from_mfa)
-      msg = inspect(struct.msg)
+      msg = printing_inspect(struct.msg)
 
       "# #{ts} #{from_pid} #{from_mfa}\n# #{to_pid} #{to_mfa} <<< #{msg}"
     end
@@ -108,9 +116,9 @@ defmodule Rexbug.Printing do
 
     def represent(%__MODULE__{} = struct) do
       ts = Timestamp.represent(struct.time)
-      to_pid = inspect(struct.to_pid)
+      to_pid = printing_inspect(struct.to_pid)
       to_mfa = MFA.represent(struct.to_mfa)
-      msg = inspect(struct.msg)
+      msg = printing_inspect(struct.msg)
 
       "# #{ts} #{to_pid} #{to_mfa}\n# <<< #{msg}"
     end
@@ -181,15 +189,17 @@ defmodule Rexbug.Printing do
     other
   end
 
+  #===========================================================================
+  # Internal Functions
+  #===========================================================================
 
   defp represent(%mod{} = struct) when mod in [Call, Return, Send, Receive] do
     mod.represent(struct)
   end
 
   defp represent(other) do
-    "OTHER: " <> inspect(other)
+    "OTHER: " <> printing_inspect(other)
   end
-
 
   def receive_all() do
     receive do
