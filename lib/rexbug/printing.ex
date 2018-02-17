@@ -1,5 +1,4 @@
 defmodule Rexbug.Printing do
-
   import Rexbug.Printing.Utils
 
   #===========================================================================
@@ -134,6 +133,7 @@ defmodule Rexbug.Printing do
     |> IO.puts()
   end
 
+
   @doc false
   def format(msg) do
     msg
@@ -141,9 +141,6 @@ defmodule Rexbug.Printing do
     |> represent()
   end
 
-  #===========================================================================
-  # Private Functions
-  #===========================================================================
 
   def from_erl({:call, {mfa, info}, {from_pid, from_mfa}, time}) do
     %Call{
@@ -195,20 +192,6 @@ defmodule Rexbug.Printing do
 
   defp represent(%mod{} = struct) when mod in [Call, Return, Send, Receive] do
     mod.represent(struct)
-  end
-
-  defp represent(other) do
-    "OTHER: " <> printing_inspect(other)
-  end
-
-  def receive_all() do
-    receive do
-      sth ->
-        IO.inspect(sth)
-        receive_all()
-    after
-      0 -> :ok
-    end
   end
 
 end
