@@ -33,6 +33,32 @@ defmodule Rexbug.PrintingTest do
 
       assert "# 21:53:07 #PID<0.194.0> DEAD\n# :erlang.binary_to_term/1 -> {:foo, \"bar\", 1}" == Printing.format(msg)
     end
+
+    test "sample send message" do
+      msg = {
+        :send,
+        {
+          {1, :foo},
+          {
+            :c.pid(0, 178, 0),
+            {IEx.Evaluator, :init, 4}
+          }
+        },
+        {
+          :c.pid(0, 396, 0),
+          :dead
+        },
+        {1, 39, 54, 116410}
+      }
+      assert "# 01:39:54 #PID<0.396.0> DEAD\n# #PID<0.178.0> IEx.Evaluator.init/4 <<< {1, :foo}" == Printing.format(msg)
+    end
+
+    test "sample receive message" do
+      msg = {:recv, {1, :foo}, {:c.pid(0, 182, 0), {IEx.Evaluator, :init, 4}}, {22, 20, 4, 760169}}
+
+      assert "# 22:20:04 #PID<0.182.0> IEx.Evaluator.init/4\n# <<< {1, :foo}" == Printing.format(msg)
+    end
+
   end
 
 end

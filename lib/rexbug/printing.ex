@@ -42,12 +42,7 @@ defmodule Rexbug.Printing do
   end
 
   defmodule Timestamp do
-    defstruct [
-      :hours,
-      :minutes,
-      :seconds,
-      :us,
-    ]
+    defstruct ~w(hours minutes seconds us)a
 
     def from_erl({h, m, s, us}) do
       %__MODULE__{hours: h, minutes: m, seconds: s, us: us}
@@ -67,13 +62,7 @@ defmodule Rexbug.Printing do
   # :call, :retn, :send, :recv
 
   defmodule Call do
-    defstruct [
-      :mfa,
-      :info,
-      :from_pid,
-      :from_mfa,
-      :time,
-    ]
+    defstruct ~w(mfa info from_pid from_mfa time)a
 
     def represent(%__MODULE__{} = struct) do
       ts = Timestamp.represent(struct.time)
@@ -86,13 +75,7 @@ defmodule Rexbug.Printing do
   end
 
   defmodule Return do
-    defstruct [
-      :mfa,
-      :return_value,
-      :from_pid,
-      :from_mfa,
-      :time,
-    ]
+    defstruct ~w(mfa return_value from_pid from_mfa time)a
 
     def represent(%__MODULE__{} = struct) do
       ts = Timestamp.represent(struct.time)
@@ -105,6 +88,33 @@ defmodule Rexbug.Printing do
     end
   end
 
+  defmodule Send do
+    defstruct ~w(msg to_pid to_mfa from_pid from_mfa time)a
+
+    def represent(%__MODULE__{} = struct) do
+      ts = Timestamp.represent(struct.time)
+      to_pid = inspect(struct.to_pid)
+      to_mfa = MFA.represent(struct.to_mfa)
+      from_pid = inspect(struct.from_pid)
+      from_mfa = MFA.represent(struct.from_mfa)
+      msg = inspect(struct.msg)
+
+      "# #{ts} #{from_pid} #{from_mfa}\n# #{to_pid} #{to_mfa} <<< #{msg}"
+    end
+  end
+
+  defmodule Receive do
+    defstruct ~w(msg to_pid to_mfa time)a
+
+    def represent(%__MODULE__{} = struct) do
+      ts = Timestamp.represent(struct.time)
+      to_pid = inspect(struct.to_pid)
+      to_mfa = MFA.represent(struct.to_mfa)
+      msg = inspect(struct.msg)
+
+      "# #{ts} #{to_pid} #{to_mfa}\n# <<< #{msg}"
+    end
+  end
 
   #===========================================================================
   # Public Functions
@@ -127,15 +137,6 @@ defmodule Rexbug.Printing do
   # Private Functions
   #===========================================================================
 
-  # {
-  #   :call,
-  #   {
-  #     {URI, :parse, ["https://example.com"]},
-  #     ""
-  #   },
-  #   {PID<0.150.0>, {IEx.Evaluator, :init, 4}},
-  #     {21, 49, 20, 152927}
-  # }
   def from_erl({:call, {mfa, info}, {from_pid, from_mfa}, time}) do
     %Call{
       mfa: MFA.from_erl(mfa),
@@ -145,20 +146,6 @@ defmodule Rexbug.Printing do
       time: Timestamp.from_erl(time)
     }
   end
-
-  # {
-  #   :retn,
-  #   {
-  #    {URI, :parse, 1},
-  #     %URI{authority: "example.com", fragment: nil, host: "example.com", path: nil,
-  #          port: 443, query: nil, scheme: "https", userinfo: nil}
-  #   },
-  #   {
-  #     #PID<0.194.0>,
-  #     :dead
-  #   },
-  #   {21, 53, 7, 178179}
-  # }
 
   def from_erl({:retn, {mfa, retn}, {from_pid, from_mfa}, time}) do
     %Return{
@@ -170,12 +157,32 @@ defmodule Rexbug.Printing do
     }
   end
 
+  def from_erl({:send, {msg, {to_pid, to_mfa}}, {from_pid, from_mfa}, time}) do
+    %Send{
+      msg: msg,
+      to_pid: to_pid,
+      to_mfa: MFA.from_erl(to_mfa),
+      from_pid: from_pid,
+      from_mfa: MFA.from_erl(from_mfa),
+      time: Timestamp.from_erl(time),
+    }
+  end
+
+  def from_erl({:recv, msg, {to_pid, to_mfa}, time}) do
+    %Receive{
+      msg: msg,
+      to_pid: to_pid,
+      to_mfa: MFA.from_erl(to_mfa),
+      time: Timestamp.from_erl(time),
+    }
+  end
+
   def from_erl(other) do
     other
   end
 
 
-  defp represent(%mod{} = struct) when mod in [Call, Return] do
+  defp represent(%mod{} = struct) when mod in [Call, Return, Send, Receive] do
     mod.represent(struct)
   end
 
@@ -183,5 +190,15 @@ defmodule Rexbug.Printing do
     "OTHER: " <> inspect(other)
   end
 
+
+  def receive_all() do
+    receive do
+      sth ->
+        IO.inspect(sth)
+        receive_all()
+    after
+      0 -> :ok
+    end
+  end
 
 end
