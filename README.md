@@ -57,7 +57,7 @@ in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:rexbug, ">= 0.6.0"}]
+  [{:rexbug, ">= 1.0.0"}]
 end
 ```
 
