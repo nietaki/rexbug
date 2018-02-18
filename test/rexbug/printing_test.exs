@@ -87,4 +87,23 @@ defmodule Rexbug.PrintingTest do
     end
   end
 
+  describe "Printing.extract_stack/1" do
+    test "works on an example info binary" do
+      dump = File.read!(__DIR__ <> "/../support/dump.txt")
+      expected = [
+        ":erl_eval.do_apply/6",
+        ":elixir.erl_eval/3",
+        ":elixir.eval_forms/4",
+        "IEx.Evaluator.handle_eval/6",
+        "IEx.Evaluator.do_eval/4",
+        "IEx.Evaluator.eval/4",
+        "IEx.Evaluator.loop/3",
+        "IEx.Evaluator.init/4",
+        ":proc_lib.init_p_do_apply/3"
+      ]
+
+      assert expected == Printing.extract_stack(dump)
+    end
+  end
+
 end

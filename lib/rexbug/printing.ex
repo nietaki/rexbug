@@ -69,15 +69,25 @@ defmodule Rexbug.Printing do
   #---------------------------------------------------------------------------
 
   defmodule Call do
-    defstruct ~w(mfa info from_pid from_mfa time)a
+    defstruct ~w(mfa dump from_pid from_mfa time)a
 
     def represent(%__MODULE__{} = struct) do
       ts = Timestamp.represent(struct.time)
       pid = printing_inspect(struct.from_pid)
       from_mfa = MFA.represent(struct.from_mfa)
       mfa = MFA.represent(struct.mfa)
+      maybe_stack = represent_stack(struct.dump)
 
-      "# #{ts} #{pid} #{from_mfa}\n# #{mfa}"
+      "# #{ts} #{pid} #{from_mfa}\n# #{mfa}#{maybe_stack}"
+    end
+
+    defp represent_stack(nil), do: ""
+    defp represent_stack(""), do: ""
+    defp represent_stack(dump) do
+      dump
+      |> Rexbug.Printing.extract_stack()
+      |> Enum.map(fn(fun_rep) -> "\n#   #{fun_rep}" end)
+      |> Enum.join("")
     end
   end
 
@@ -131,6 +141,7 @@ defmodule Rexbug.Printing do
     msg
     |> format()
     |> IO.puts()
+    IO.puts("")
   end
 
 
@@ -142,10 +153,10 @@ defmodule Rexbug.Printing do
   end
 
 
-  def from_erl({:call, {mfa, info}, {from_pid, from_mfa}, time}) do
+  def from_erl({:call, {mfa, dump}, {from_pid, from_mfa}, time}) do
     %Call{
       mfa: MFA.from_erl(mfa),
-      info: info,
+      dump: dump,
       from_pid: from_pid,
       from_mfa: MFA.from_erl(from_mfa),
       time: Timestamp.from_erl(time)
@@ -186,12 +197,46 @@ defmodule Rexbug.Printing do
     other
   end
 
+  @doc false
+  def represent(%mod{} = struct) when mod in [Call, Return, Send, Receive] do
+    mod.represent(struct)
+  end
+
+
+  def extract_stack(dump) do
+    String.split(dump, "\n")
+    |> Enum.filter( &Regex.match?(~r/Return addr 0x|CP: 0x/, &1) )
+    |> Enum.flat_map(&extract_function/1)
+  end
+
   #===========================================================================
   # Internal Functions
   #===========================================================================
 
-  defp represent(%mod{} = struct) when mod in [Call, Return, Send, Receive] do
-    mod.represent(struct)
+  defp extract_function(line) do
+    case Regex.run(~r"^.+\((.+):(.+)/(\d+).+\)$", line, capture: :all_but_first) do
+      [m, f, arity] ->
+        m = translate_module_from_dump(m)
+        f = strip_single_quotes(f)
+        ["#{m}.#{f}/#{arity}"]
+      nil ->
+        []
+    end
+  end
+
+
+  defp strip_single_quotes(str) do
+    String.trim(str, "'")
+  end
+
+
+  defp translate_module_from_dump(module) do
+    case strip_single_quotes(module) do
+      "Elixir." <> rest ->
+        rest
+      erlang_module ->
+        ":#{erlang_module}"
+    end
   end
 
 end
