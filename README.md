@@ -70,21 +70,21 @@ can start debugging it at your convenience.
 iex> Rexbug.start("Map") # trace the whole module
 {82, 41}
 iex> m = Map.put(%{}, :foo, :bar) # this could have been called in any process
-
-% 23:40:49 <0.147.0>({'Elixir.IEx.Evaluator',init,4})
-% 'Elixir.Map':'__info__'(macros)
 %{foo: :bar}
+
+# 18:51:55 #PID<0.150.0> IEx.Evaluator.init/4
+# Map.__info__(:macros)
 iex> Map.get(m, :foo)
 :bar
 
-% 23:40:53 <0.147.0>({'Elixir.IEx.Evaluator',init,4})
-% 'Elixir.Map':'__info__'(macros)
+# 18:51:57 #PID<0.150.0> IEx.Evaluator.init/4
+# Map.__info__(:macros)
 
-% 23:40:53 <0.147.0>({'Elixir.IEx.Evaluator',init,4})
-% 'Elixir.Map':get(#{foo => bar}, foo)
+# 18:51:57 #PID<0.150.0> IEx.Evaluator.init/4
+# Map.get(%{foo: :bar}, :foo)
 
-% 23:40:53 <0.147.0>({'Elixir.IEx.Evaluator',init,4})
-% 'Elixir.Map':get(#{foo => bar}, foo, nil)
+# 18:51:57 #PID<0.150.0> IEx.Evaluator.init/4
+# Map.get(%{foo: :bar}, :foo, nil)
 iex> # Rexbug tracing is going to time out now
 nil
 redbug done, timeout - 4
@@ -101,8 +101,8 @@ false
 iex> Enum.member?([1, 2, 3], "foo") # will match
 false
 
-% 23:48:07 <0.147.0>({'Elixir.IEx.Evaluator',init,4})
-% 'Elixir.Enum':'member?'([1,2,3], <<"foo">>)
+# 18:55:44 #PID<0.150.0> IEx.Evaluator.init/4
+# Enum.member?([1, 2, 3], "foo")
 iex> Rexbug.stop()
 :stopped
 redbug done, local_done - 1
@@ -150,8 +150,6 @@ Rexbug.start("Map.new/_ :: return;stack")
 - In the trace patterns `"Mod.fun"` implicitly translates to `"Mod.fun()"`, which
   is equivalent to `"Mod.fun/0"`. To target the function with any arity, use 
   `"Mod.fun/_"` or `"Mod.fun/any"` 
-- ~It's not possible to pattern match on maps in the function args -
-  I'm reasonably sure it's a [limitation of `:redbug`](https://github.com/massemanet/redbug/issues/2)~ **FIXED!**
 
 ## FAQ
 
