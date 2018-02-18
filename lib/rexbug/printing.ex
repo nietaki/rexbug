@@ -157,10 +157,7 @@ defmodule Rexbug.Printing do
   """
   @spec print(tuple()) :: :ok
   def print(message) do
-    message
-    |> format()
-    |> IO.puts()
-    IO.puts("")
+    IO.puts("\n" <> format(message))
   end
 
 
