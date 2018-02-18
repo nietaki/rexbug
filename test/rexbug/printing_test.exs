@@ -46,7 +46,7 @@ defmodule Rexbug.PrintingTest do
         {21, 53, 7, 178179}
       }
 
-      assert "# 21:53:07 #PID<0.194.0> DEAD\n# :erlang.binary_to_term/1 -> {:foo, \"bar\", 1}" == Printing.format(msg)
+      assert "# 21:53:07 #PID<0.194.0> (:dead)\n# :erlang.binary_to_term/1 -> {:foo, \"bar\", 1}" == Printing.format(msg)
     end
 
     test "sample send message" do
@@ -65,7 +65,7 @@ defmodule Rexbug.PrintingTest do
         },
         {1, 39, 54, 116410}
       }
-      assert "# 01:39:54 #PID<0.396.0> DEAD\n# #PID<0.178.0> IEx.Evaluator.init/4 <<< {1, :foo}" == Printing.format(msg)
+      assert "# 01:39:54 #PID<0.396.0> (:dead)\n# #PID<0.178.0> IEx.Evaluator.init/4 <<< {1, :foo}" == Printing.format(msg)
     end
 
     test "sample receive message" do

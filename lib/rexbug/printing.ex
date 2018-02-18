@@ -22,9 +22,7 @@ defmodule Rexbug.Printing do
 
 
     def represent(a) when is_atom(a) do
-      a
-      |> Atom.to_string()
-      |> String.upcase()
+      "(#{inspect(a)})"
     end
 
     def represent(%__MODULE__{m: m, f: f, a: a}) do
