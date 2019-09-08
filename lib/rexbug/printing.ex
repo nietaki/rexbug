@@ -28,11 +28,11 @@ defmodule Rexbug.Printing do
       %__MODULE__{m: m, f: f, a: a}
     end
 
-    def from_erl(a) when is_atom(a) do
+    def from_erl(a) when is_atom(a) or is_list(a) do
       a
     end
 
-    def represent(a, _opts) when is_atom(a) do
+    def represent(a, _opts) when is_atom(a) or is_list(a) do
       "(#{inspect(a)})"
     end
 
@@ -196,7 +196,9 @@ defmodule Rexbug.Printing do
           | Printing.Send.t()
           | Printing.Receive.t()
           | term()
-  def from_erl({:call, {mfa, dump}, {from_pid, from_mfa}, time}) do
+  def from_erl({:call, {mfa, dump}, from_pid_mfa, time}) do
+    {from_pid, from_mfa} = get_pid_mfa(from_pid_mfa)
+
     %Call{
       mfa: MFA.from_erl(mfa),
       dump: dump,
@@ -206,7 +208,9 @@ defmodule Rexbug.Printing do
     }
   end
 
-  def from_erl({:retn, {mfa, retn}, {from_pid, from_mfa}, time}) do
+  def from_erl({:retn, {mfa, retn}, from_pid_mfa, time}) do
+    {from_pid, from_mfa} = get_pid_mfa(from_pid_mfa)
+
     %Return{
       mfa: MFA.from_erl(mfa),
       return_value: retn,
@@ -216,7 +220,10 @@ defmodule Rexbug.Printing do
     }
   end
 
-  def from_erl({:send, {msg, {to_pid, to_mfa}}, {from_pid, from_mfa}, time}) do
+  def from_erl({:send, {msg, to_pid_mfa}, from_pid_mfa, time}) do
+    {to_pid, to_mfa} = get_pid_mfa(to_pid_mfa)
+    {from_pid, from_mfa} = get_pid_mfa(from_pid_mfa)
+
     %Send{
       msg: msg,
       to_pid: to_pid,
@@ -227,7 +234,9 @@ defmodule Rexbug.Printing do
     }
   end
 
-  def from_erl({:recv, msg, {to_pid, to_mfa}, time}) do
+  def from_erl({:recv, msg, to_pid_mfa, time}) do
+    {to_pid, to_mfa} = get_pid_mfa(to_pid_mfa)
+
     %Receive{
       msg: msg,
       to_pid: to_pid,
@@ -239,6 +248,14 @@ defmodule Rexbug.Printing do
   # fallthrough so that you can use it indiscriminately
   def from_erl(message) do
     message
+  end
+
+  defp get_pid_mfa({pid, mfa}) do
+    {pid, mfa}
+  end
+
+  defp get_pid_mfa(other) when is_atom(other) or is_list(other) do
+    {nil, other}
   end
 
   @doc false
