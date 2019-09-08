@@ -227,7 +227,7 @@ defmodule Rexbug do
   """
   def start(trace_pattern, options) do
     with {:ok, options} <- Translator.translate_options(options),
-         options = Keyword.merge(default_options(), options),
+         options = add_default_options(options),
          {:ok, translated} <- Translator.translate(trace_pattern) do
       :redbug.start(translated, options)
     end
@@ -282,9 +282,13 @@ defmodule Rexbug do
     :ok
   end
 
-  defp default_options() do
-    [
-      print_fun: &Rexbug.Printing.print/1
+  defp add_default_options(opts) do
+    print_fun = fn t -> Rexbug.Printing.print_with_opts(t, opts) end
+
+    default_options = [
+      print_fun: print_fun
     ]
+
+    Keyword.merge(default_options, opts)
   end
 end
