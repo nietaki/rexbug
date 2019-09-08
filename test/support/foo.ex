@@ -1,5 +1,4 @@
 defmodule Foo do
-
   defmodule Bar do
     def abc() do
     end

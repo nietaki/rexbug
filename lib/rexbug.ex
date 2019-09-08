@@ -84,21 +84,21 @@ defmodule Rexbug do
   file_count   (8)           number of trc files
   """
 
-
   alias Rexbug.Translator
 
   @type redbug_non_blocking_return :: {proc_count :: integer, func_count :: integer}
-  @type redbug_blocking_return     :: {stop_reason :: atom, trace_messages :: [term]}
-  @type redbug_error               :: {error_type :: atom, error_reason :: term}
-  @type rexbug_error               :: {:error, reason :: term}
+  @type redbug_blocking_return :: {stop_reason :: atom, trace_messages :: [term]}
+  @type redbug_error :: {error_type :: atom, error_reason :: term}
+  @type rexbug_error :: {:error, reason :: term}
 
-  @type rexbug_return :: redbug_non_blocking_return | redbug_blocking_return | redbug_error | rexbug_error
+  @type rexbug_return ::
+          redbug_non_blocking_return | redbug_blocking_return | redbug_error | rexbug_error
 
-  @type trace_pattern_instance :: String.t | :send | :receive
+  @type trace_pattern_instance :: String.t() | :send | :receive
 
   @type trace_pattern :: trace_pattern_instance | [trace_pattern_instance]
 
-  @type proc  :: pid() | atom | {pid, integer, integer}
+  @type proc :: pid() | atom | {pid, integer, integer}
   @type procs :: :all | :new | :running | proc | [proc]
 
   @spec start(trace_pattern) :: rexbug_return
@@ -111,21 +111,24 @@ defmodule Rexbug do
   @doc """
   See `Rexbug.start/2`.
   """
-  def start(time, msgs, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs])
+  def start(time, msgs, trace_pattern), do: start(trace_pattern, time: time, msgs: msgs)
 
   @spec start(time :: integer, msgs :: integer, procs :: procs, trace_pattern) :: rexbug_return
   @doc """
   See `Rexbug.start/2`.
   """
-  def start(time, msgs, procs, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs, procs: procs])
+  def start(time, msgs, procs, trace_pattern),
+    do: start(trace_pattern, time: time, msgs: msgs, procs: procs)
 
-  @spec start(time :: integer, msgs :: integer, procs :: procs, node :: node(), trace_pattern) :: rexbug_return
+  @spec start(time :: integer, msgs :: integer, procs :: procs, node :: node(), trace_pattern) ::
+          rexbug_return
   @doc """
   See `Rexbug.start/2`.
   """
-  def start(time, msgs, procs, node, trace_pattern), do: start(trace_pattern, [time: time, msgs: msgs, procs: procs, target: node])
+  def start(time, msgs, procs, node, trace_pattern),
+    do: start(trace_pattern, time: time, msgs: msgs, procs: procs, target: node)
 
-  @spec start(trace_pattern, opts :: Keyword.t) :: rexbug_return
+  @spec start(trace_pattern, opts :: Keyword.t()) :: rexbug_return
   @doc """
   Starts tracing for the given pattern with provided options.
 
@@ -225,12 +228,10 @@ defmodule Rexbug do
   def start(trace_pattern, options) do
     with {:ok, options} <- Translator.translate_options(options),
          options = Keyword.merge(default_options(), options),
-         {:ok, translated} <- Translator.translate(trace_pattern)
-      do
+         {:ok, translated} <- Translator.translate(trace_pattern) do
       :redbug.start(translated, options)
     end
   end
-
 
   @spec stop() :: :stopped | :not_started
   @doc """
@@ -250,10 +251,13 @@ defmodule Rexbug do
   # kind of relies on redbug internal behaviour, but not really
   def stop_sync(timeout \\ 100) do
     case Process.whereis(:redbug) do
-      nil -> :not_started
+      nil ->
+        :not_started
+
       pid ->
         ref = Process.monitor(pid)
         res = :redbug.stop()
+
         receive do
           {:DOWN, ^ref, _, _, _} ->
             :stopped
@@ -266,26 +270,21 @@ defmodule Rexbug do
 
   @spec help() :: :ok
   @doc """
-  Prints the help message / usage manual to standard output.
+       Prints the help message / usage manual to standard output.
 
-  The help message is as follows:
+       The help message is as follows:
 
-  ```txt
-  """ <>
-    @help_message <>
-    "\n```"
+       ```txt
+       """ <> @help_message <> "\n```"
 
   def help() do
     IO.puts(@help_message)
     :ok
   end
 
-
   defp default_options() do
     [
       print_fun: &Rexbug.Printing.print/1
     ]
   end
-
-
 end
