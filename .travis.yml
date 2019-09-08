@@ -21,5 +21,11 @@ script:
       MIX_ENV=test mix coveralls.travis;
     else
       echo "===> Testing without code coverage";
-      MIX_ENV=test mix test;
+      MIX_ENV=test mix test -- trace;
     fi
+
+jobs:
+  include:
+    - stage: check_formatting
+      if: env(LATEST) = 1
+      script: mix format --check-formatted
