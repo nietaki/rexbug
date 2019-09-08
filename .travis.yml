@@ -7,7 +7,7 @@ matrix:
     - otp_release: 20.3
       elixir: 1.7.4
     - otp_release: 21.3
-      elixir: 1.8.1
+      elixir: 1.8.2
     - otp_release: 22.0
       elixir: 1.8.2
       env: LATEST=1
@@ -23,9 +23,3 @@ script:
       echo "===> Testing without code coverage";
       mix test --trace;
     fi
-cache:
-  directories:
-    - _build
-before_cache:
-  # should keep only compiled deps
-  - mix clean
