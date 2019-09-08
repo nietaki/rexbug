@@ -65,8 +65,10 @@ can start debugging it at your convenience.
 
 ## Examples
 
+### Tracing a whole module
+
 ```Elixir
-iex> Rexbug.start("Map") # trace the whole module
+iex> Rexbug.start("Map")
 {82, 41}
 iex> m = Map.put(%{}, :foo, :bar) # this could have been called in any process
 %{foo: :bar}
@@ -90,8 +92,10 @@ redbug done, timeout - 4
 iex>
 ```
 
+### Tracing with matching function arguments
+
 ```Elixir
-iex> Rexbug.start("Enum.member?([_, _, _], \"foo\")") # trace function with matching arguments
+iex> Rexbug.start("Enum.member?([_, _, _], \"foo\")")
 {82, 1}
 iex> Enum.member?([1, 2], "foo") # first argument doesn't match
 false
@@ -106,6 +110,32 @@ iex> Rexbug.stop()
 :stopped
 redbug done, local_done - 1
 iex>
+```
+
+### Tracing messages sent and received from a process
+
+```Elixir
+iex> s = self()
+#PID<0.193.0>
+iex> proc = Process.spawn(fn ->
+...>   receive do
+...>     anything -> send(s, {:got, anything})
+...>   end
+...> end, [])
+iex> Rexbug.start([:send, :receive], procs: [proc], time: 60_000)
+{1, 0}
+iex> send(proc, :foo)
+:foo
+
+# 18:31:08 #PID<0.208.0> (:dead)
+# <<< :foo
+
+# 18:31:08 #PID<0.208.0> (:dead)
+# #PID<0.193.0> IEx.Evaluator.init/4 <<< {:got, :foo}
+iex> flush()
+{:got, :foo}
+:ok
+redbug done, timeout - 2
 ```
 
 ## Motivation
