@@ -23,3 +23,9 @@ script:
       echo "===> Testing without code coverage";
       mix test --trace;
     fi
+cache:
+  directories:
+    - _build
+before_cache:
+  # should keep only compiled deps
+  - mix clean
