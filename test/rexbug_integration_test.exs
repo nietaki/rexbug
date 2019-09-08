@@ -146,6 +146,6 @@ defmodule RexbugIntegrationTest do
   end
 
   defp stop_safely() do
-    assert Rexbug.stop_sync() in [:not_started, :stopped]
+    assert Rexbug.stop_sync(1000) in [:not_started, :stopped]
   end
 end
