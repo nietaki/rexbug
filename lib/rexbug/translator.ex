@@ -231,7 +231,7 @@ defmodule Rexbug.Translator do
 
   defp validate_mfaa(nil, _, _, _), do: {:error, :missing_module}
 
-  defp validate_mfaa(_, nil, args, _) when not args in [nil, []], do: {:error, :missing_function}
+  defp validate_mfaa(_, nil, args, _) when not (args in [nil, []]), do: {:error, :missing_function}
 
   defp validate_mfaa(_, nil, _, arity) when arity != nil, do: {:error, :missing_function}
 

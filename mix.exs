@@ -26,9 +26,9 @@ defmodule Rexbug.Mixfile do
 
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
-        "coveralls": :test,
+        coveralls: :test,
         "coveralls.html": :test,
-        "test": :test,
+        test: :test,
       ],
       docs: docs(),
     ]
@@ -51,7 +51,7 @@ defmodule Rexbug.Mixfile do
 
   defp aliases do
     [
-      "coveralls": [
+      coveralls: [
         "coveralls --exclude integration",
       ],
       "coveralls.html": [
@@ -89,7 +89,7 @@ defmodule Rexbug.Mixfile do
 
       # test/housekeeping stuff
       {:excoveralls, "~> 0.4", only: :test},
-      {:ex_doc, "~> 0.18.1", only: :dev},
+      {:ex_doc, "~> 0.18", only: :dev},
       {:mix_test_watch, "~> 0.5", only: :dev, runtime: false},
     ]
   end
