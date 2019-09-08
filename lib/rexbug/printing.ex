@@ -32,11 +32,11 @@ defmodule Rexbug.Printing do
       a
     end
 
-    def represent(a) when is_atom(a) do
+    def represent(a, _opts) when is_atom(a) do
       "(#{inspect(a)})"
     end
 
-    def represent(%__MODULE__{m: m, f: f, a: a}) do
+    def represent(%__MODULE__{m: m, f: f, a: a}, _opts) do
       mrep =
         case Atom.to_string(m) do
           "Elixir." <> rest -> rest
@@ -67,8 +67,12 @@ defmodule Rexbug.Printing do
       %__MODULE__{hours: h, minutes: m, seconds: s, us: us}
     end
 
-    def represent(%__MODULE__{hours: h, minutes: m, seconds: s}) do
-      "#{format_int(h)}:#{format_int(m)}:#{format_int(s)}"
+    def represent(%__MODULE__{hours: h, minutes: m, seconds: s, us: us}, opts) do
+      if Keyword.get(opts, :print_msec, false) do
+        "#{format_int(h)}:#{format_int(m)}:#{format_int(s)}.#{format_int(div(us, 1000))}"
+      else
+        "#{format_int(h)}:#{format_int(m)}:#{format_int(s)}"
+      end
     end
 
     defp format_int(i, length \\ 2) do
@@ -86,20 +90,20 @@ defmodule Rexbug.Printing do
     @type t :: %__MODULE__{}
     defstruct ~w(mfa dump from_pid from_mfa time)a
 
-    def represent(%__MODULE__{} = struct) do
-      ts = Timestamp.represent(struct.time)
+    def represent(%__MODULE__{} = struct, opts) do
+      ts = Timestamp.represent(struct.time, opts)
       pid = printing_inspect(struct.from_pid)
-      from_mfa = MFA.represent(struct.from_mfa)
-      mfa = MFA.represent(struct.mfa)
-      maybe_stack = represent_stack(struct.dump)
+      from_mfa = MFA.represent(struct.from_mfa, opts)
+      mfa = MFA.represent(struct.mfa, opts)
+      maybe_stack = represent_stack(struct.dump, opts)
 
       "# #{ts} #{pid} #{from_mfa}\n# #{mfa}#{maybe_stack}"
     end
 
-    defp represent_stack(nil), do: ""
-    defp represent_stack(""), do: ""
+    defp represent_stack(nil, _opts), do: ""
+    defp represent_stack("", _opts), do: ""
 
-    defp represent_stack(dump) do
+    defp represent_stack(dump, _opts) do
       dump
       |> Printing.extract_stack()
       |> Enum.map(fn fun_rep -> "\n#   #{fun_rep}" end)
@@ -111,11 +115,11 @@ defmodule Rexbug.Printing do
     @type t :: %__MODULE__{}
     defstruct ~w(mfa return_value from_pid from_mfa time)a
 
-    def represent(%__MODULE__{} = struct) do
-      ts = Timestamp.represent(struct.time)
+    def represent(%__MODULE__{} = struct, opts) do
+      ts = Timestamp.represent(struct.time, opts)
       pid = printing_inspect(struct.from_pid)
-      from_mfa = MFA.represent(struct.from_mfa)
-      mfa = MFA.represent(struct.mfa)
+      from_mfa = MFA.represent(struct.from_mfa, opts)
+      mfa = MFA.represent(struct.mfa, opts)
       retn = printing_inspect(struct.return_value)
 
       "# #{ts} #{pid} #{from_mfa}\n# #{mfa} -> #{retn}"
@@ -126,12 +130,12 @@ defmodule Rexbug.Printing do
     @type t :: %__MODULE__{}
     defstruct ~w(msg to_pid to_mfa from_pid from_mfa time)a
 
-    def represent(%__MODULE__{} = struct) do
-      ts = Timestamp.represent(struct.time)
+    def represent(%__MODULE__{} = struct, opts) do
+      ts = Timestamp.represent(struct.time, opts)
       to_pid = printing_inspect(struct.to_pid)
-      to_mfa = MFA.represent(struct.to_mfa)
+      to_mfa = MFA.represent(struct.to_mfa, opts)
       from_pid = printing_inspect(struct.from_pid)
-      from_mfa = MFA.represent(struct.from_mfa)
+      from_mfa = MFA.represent(struct.from_mfa, opts)
       msg = printing_inspect(struct.msg)
 
       "# #{ts} #{from_pid} #{from_mfa}\n# #{to_pid} #{to_mfa} <<< #{msg}"
@@ -142,10 +146,10 @@ defmodule Rexbug.Printing do
     @type t :: %__MODULE__{}
     defstruct ~w(msg to_pid to_mfa time)a
 
-    def represent(%__MODULE__{} = struct) do
-      ts = Timestamp.represent(struct.time)
+    def represent(%__MODULE__{} = struct, opts) do
+      ts = Timestamp.represent(struct.time, opts)
       to_pid = printing_inspect(struct.to_pid)
-      to_mfa = MFA.represent(struct.to_mfa)
+      to_mfa = MFA.represent(struct.to_mfa, opts)
       msg = printing_inspect(struct.msg)
 
       "# #{ts} #{to_pid} #{to_mfa}\n# <<< #{msg}"
@@ -166,10 +170,16 @@ defmodule Rexbug.Printing do
   end
 
   @doc false
-  def format(message) do
+  @spec print_with_opts(tuple(), Keyword.t()) :: :ok
+  def print_with_opts(message, opts) do
+    IO.puts("\n" <> format(message, opts))
+  end
+
+  @doc false
+  def format(message, opts \\ []) do
     message
     |> from_erl()
-    |> represent()
+    |> represent(opts)
   end
 
   @doc """
@@ -230,8 +240,8 @@ defmodule Rexbug.Printing do
   end
 
   @doc false
-  def represent(%mod{} = struct) when mod in [Call, Return, Send, Receive] do
-    mod.represent(struct)
+  def represent(%mod{} = struct, opts) when mod in [Call, Return, Send, Receive] do
+    mod.represent(struct, opts)
   end
 
   @doc """

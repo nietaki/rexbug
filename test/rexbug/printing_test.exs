@@ -20,7 +20,7 @@ defmodule Rexbug.PrintingTest do
     end
   end
 
-  describe "Printing.format/1" do
+  describe "Printing.format/_" do
     test "sample call on Elixir module" do
       msg = {
         :call,
@@ -81,6 +81,15 @@ defmodule Rexbug.PrintingTest do
 
       assert "# 22:20:04 #PID<0.182.0> IEx.Evaluator.init/4\n# <<< {1, :foo}" ==
                Printing.format(msg)
+    end
+
+    test "can print with print_msec option set to true" do
+      msg =
+        {:recv, {1, :foo}, {:c.pid(0, 182, 0), {IEx.Evaluator, :init, 4}}, {22, 20, 4, 760_169}}
+
+      assert "# 22:20:04 #PID" <> _rest = Printing.format(msg)
+      assert "# 22:20:04 #PID" <> _rest = Printing.format(msg, print_msec: false)
+      assert "# 22:20:04.760 #PID" <> _rest = Printing.format(msg, print_msec: true)
     end
   end
 
