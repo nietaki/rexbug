@@ -7,7 +7,9 @@ defmodule Rexbug.PrintingTest do
 
   describe "Printing.from_erl/1" do
     test "parses redbug messages" do
-      msg = {:call, {{URI, :parse, ["https://example.com"]}, ""}, {:c.pid(0, 150, 0), {IEx.Evaluator, :init, 4}}, {21, 49, 2, 152927}}
+      msg =
+        {:call, {{URI, :parse, ["https://example.com"]}, ""},
+         {:c.pid(0, 150, 0), {IEx.Evaluator, :init, 4}}, {21, 49, 2, 152_927}}
 
       assert %Rexbug.Printing.Call{} = Printing.from_erl(msg)
     end
@@ -27,9 +29,11 @@ defmodule Rexbug.PrintingTest do
           ""
         },
         {:c.pid(0, 150, 0), {IEx.Evaluator, :init, 4}},
-          {21, 49, 2, 152927}
+        {21, 49, 2, 152_927}
       }
-      assert "# 21:49:02 #PID<0.150.0> IEx.Evaluator.init/4\n# URI.parse(\"https://example.com\")" == Printing.format(msg)
+
+      assert "# 21:49:02 #PID<0.150.0> IEx.Evaluator.init/4\n# URI.parse(\"https://example.com\")" ==
+               Printing.format(msg)
     end
 
     test "sample return message" do
@@ -43,10 +47,11 @@ defmodule Rexbug.PrintingTest do
           :c.pid(0, 194, 0),
           :dead
         },
-        {21, 53, 7, 178179}
+        {21, 53, 7, 178_179}
       }
 
-      assert "# 21:53:07 #PID<0.194.0> (:dead)\n# :erlang.binary_to_term/1 -> {:foo, \"bar\", 1}" == Printing.format(msg)
+      assert "# 21:53:07 #PID<0.194.0> (:dead)\n# :erlang.binary_to_term/1 -> {:foo, \"bar\", 1}" ==
+               Printing.format(msg)
     end
 
     test "sample send message" do
@@ -63,25 +68,32 @@ defmodule Rexbug.PrintingTest do
           :c.pid(0, 396, 0),
           :dead
         },
-        {1, 39, 54, 116410}
+        {1, 39, 54, 116_410}
       }
-      assert "# 01:39:54 #PID<0.396.0> (:dead)\n# #PID<0.178.0> IEx.Evaluator.init/4 <<< {1, :foo}" == Printing.format(msg)
+
+      assert "# 01:39:54 #PID<0.396.0> (:dead)\n# #PID<0.178.0> IEx.Evaluator.init/4 <<< {1, :foo}" ==
+               Printing.format(msg)
     end
 
     test "sample receive message" do
-      msg = {:recv, {1, :foo}, {:c.pid(0, 182, 0), {IEx.Evaluator, :init, 4}}, {22, 20, 4, 760169}}
+      msg =
+        {:recv, {1, :foo}, {:c.pid(0, 182, 0), {IEx.Evaluator, :init, 4}}, {22, 20, 4, 760_169}}
 
-      assert "# 22:20:04 #PID<0.182.0> IEx.Evaluator.init/4\n# <<< {1, :foo}" == Printing.format(msg)
+      assert "# 22:20:04 #PID<0.182.0> IEx.Evaluator.init/4\n# <<< {1, :foo}" ==
+               Printing.format(msg)
     end
-
   end
 
   describe "Printing.print/1" do
     test "prints messages to stdout" do
-      msg = {:call, {{URI, :parse, ["https://example.com"]}, ""}, {:c.pid(0, 150, 0), {IEx.Evaluator, :init, 4}}, {21, 49, 2, 152927}}
-      io = capture_io(fn ->
-        Rexbug.Printing.print(msg)
-      end)
+      msg =
+        {:call, {{URI, :parse, ["https://example.com"]}, ""},
+         {:c.pid(0, 150, 0), {IEx.Evaluator, :init, 4}}, {21, 49, 2, 152_927}}
+
+      io =
+        capture_io(fn ->
+          Rexbug.Printing.print(msg)
+        end)
 
       assert String.contains?(io, "#PID<")
     end
@@ -90,6 +102,7 @@ defmodule Rexbug.PrintingTest do
   describe "Printing.extract_stack/1" do
     test "works on an example info binary" do
       dump = File.read!(__DIR__ <> "/../support/dump.txt")
+
       expected = [
         ":erl_eval.do_apply/6",
         ":elixir.erl_eval/3",
@@ -105,5 +118,4 @@ defmodule Rexbug.PrintingTest do
       assert expected == Printing.extract_stack(dump)
     end
   end
-
 end

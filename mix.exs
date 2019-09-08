@@ -16,21 +16,19 @@ defmodule Rexbug.Mixfile do
       version: "1.0.0",
       elixir: "~> 1.3",
       package: package(),
-      elixirc_paths: elixirc_paths(Mix.env),
-      build_embedded: Mix.env == :prod,
-      start_permanent: Mix.env == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
+      build_embedded: Mix.env() == :prod,
+      start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       source_url: "https://github.com/nietaki/rexbug",
-
       deps: deps(),
-
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.html": :test,
-        test: :test,
+        test: :test
       ],
-      docs: docs(),
+      docs: docs()
     ]
   end
 
@@ -42,27 +40,24 @@ defmodule Rexbug.Mixfile do
     [extra_applications: []]
   end
 
-
   # Specifies which paths to compile per environment
   defp elixirc_paths(:test), do: ["lib", "test/support"]
 
-  defp elixirc_paths(_),     do: ["lib"]
-
+  defp elixirc_paths(_), do: ["lib"]
 
   defp aliases do
     [
       coveralls: [
-        "coveralls --exclude integration",
+        "coveralls --exclude integration"
       ],
       "coveralls.html": [
-        "coveralls.html --exclude integration",
+        "coveralls.html --exclude integration"
       ],
       "coveralls.travis": [
-        "coveralls.travis --exclude integration",
-      ],
+        "coveralls.travis --exclude integration"
+      ]
     ]
   end
-
 
   defp docs do
     [
@@ -70,7 +65,7 @@ defmodule Rexbug.Mixfile do
       source_url: "https://github.com/nietaki/rexbug",
       extras: ["README.md"],
       assets: ["assets"],
-      logo: "assets/rexbug64.png",
+      logo: "assets/rexbug64.png"
     ]
   end
 
@@ -90,7 +85,7 @@ defmodule Rexbug.Mixfile do
       # test/housekeeping stuff
       {:excoveralls, "~> 0.4", only: :test},
       {:ex_doc, "~> 0.18", only: :dev},
-      {:mix_test_watch, "~> 0.5", only: :dev, runtime: false},
+      {:mix_test_watch, "~> 0.5", only: :dev, runtime: false}
     ]
   end
 
@@ -99,9 +94,9 @@ defmodule Rexbug.Mixfile do
       licenses: ["MIT"],
       maintainers: ["Jacek Królikowski <nietaki@gmail.com>"],
       links: %{
-        "GitHub" => "https://github.com/nietaki/rexbug",
+        "GitHub" => "https://github.com/nietaki/rexbug"
       },
-      description: description(),
+      description: description()
     ]
   end
 

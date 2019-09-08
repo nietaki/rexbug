@@ -10,9 +10,9 @@ defmodule Rexbug.Printing do
   alias Rexbug.Printing
   import Rexbug.Printing.Utils
 
-  #===========================================================================
+  # ===========================================================================
   # Helper Structs
-  #===========================================================================
+  # ===========================================================================
 
   defmodule MFA do
     @type t :: %__MODULE__{}
@@ -20,7 +20,8 @@ defmodule Rexbug.Printing do
     defstruct [
       :m,
       :f,
-      :a, # either args or arity
+      # either args or arity
+      :a
     ]
 
     def from_erl({m, f, a}) do
@@ -31,25 +32,28 @@ defmodule Rexbug.Printing do
       a
     end
 
-
     def represent(a) when is_atom(a) do
       "(#{inspect(a)})"
     end
 
     def represent(%__MODULE__{m: m, f: f, a: a}) do
-      mrep = case Atom.to_string(m) do
-        "Elixir." <> rest -> rest
-        erlang_module -> ":#{erlang_module}"
-      end
+      mrep =
+        case Atom.to_string(m) do
+          "Elixir." <> rest -> rest
+          erlang_module -> ":#{erlang_module}"
+        end
 
-      arep = if is_list(a) do
-        middle = a
-        |> Enum.map(&printing_inspect/1)
-        |> Enum.join(", ")
-        "(#{middle})"
-      else
-        "/#{a}"
-      end
+      arep =
+        if is_list(a) do
+          middle =
+            a
+            |> Enum.map(&printing_inspect/1)
+            |> Enum.join(", ")
+
+          "(#{middle})"
+        else
+          "/#{a}"
+        end
 
       "#{mrep}.#{f}#{arep}"
     end
@@ -74,9 +78,9 @@ defmodule Rexbug.Printing do
     end
   end
 
-  #---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   # Received message types
-  #---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   defmodule Call do
     @type t :: %__MODULE__{}
@@ -94,10 +98,11 @@ defmodule Rexbug.Printing do
 
     defp represent_stack(nil), do: ""
     defp represent_stack(""), do: ""
+
     defp represent_stack(dump) do
       dump
       |> Printing.extract_stack()
-      |> Enum.map(fn(fun_rep) -> "\n#   #{fun_rep}" end)
+      |> Enum.map(fn fun_rep -> "\n#   #{fun_rep}" end)
       |> Enum.join("")
     end
   end
@@ -147,9 +152,9 @@ defmodule Rexbug.Printing do
     end
   end
 
-  #===========================================================================
+  # ===========================================================================
   # Public Functions
-  #===========================================================================
+  # ===========================================================================
 
   @doc """
   The default value for the `Rexbug.start/2` `print_fun` option. Prints out
@@ -160,7 +165,6 @@ defmodule Rexbug.Printing do
     IO.puts("\n" <> format(message))
   end
 
-
   @doc false
   def format(message) do
     message
@@ -168,14 +172,18 @@ defmodule Rexbug.Printing do
     |> represent()
   end
 
-
   @doc """
   Translates the `:redbug` tuples representing the tracing messages to
   Elixir structs.
 
   You can use it to implement your own custom `print_fun`.
   """
-  @spec from_erl(tuple()) :: Printing.Call.t | Printing.Return.t | Printing.Send.t | Printing.Receive.t | term()
+  @spec from_erl(tuple()) ::
+          Printing.Call.t()
+          | Printing.Return.t()
+          | Printing.Send.t()
+          | Printing.Receive.t()
+          | term()
   def from_erl({:call, {mfa, dump}, {from_pid, from_mfa}, time}) do
     %Call{
       mfa: MFA.from_erl(mfa),
@@ -192,7 +200,7 @@ defmodule Rexbug.Printing do
       return_value: retn,
       from_pid: from_pid,
       from_mfa: MFA.from_erl(from_mfa),
-      time: Timestamp.from_erl(time),
+      time: Timestamp.from_erl(time)
     }
   end
 
@@ -203,7 +211,7 @@ defmodule Rexbug.Printing do
       to_mfa: MFA.from_erl(to_mfa),
       from_pid: from_pid,
       from_mfa: MFA.from_erl(from_mfa),
-      time: Timestamp.from_erl(time),
+      time: Timestamp.from_erl(time)
     }
   end
 
@@ -212,7 +220,7 @@ defmodule Rexbug.Printing do
       msg: msg,
       to_pid: to_pid,
       to_mfa: MFA.from_erl(to_mfa),
-      time: Timestamp.from_erl(time),
+      time: Timestamp.from_erl(time)
     }
   end
 
@@ -221,12 +229,10 @@ defmodule Rexbug.Printing do
     message
   end
 
-
   @doc false
   def represent(%mod{} = struct) when mod in [Call, Return, Send, Receive] do
     mod.represent(struct)
   end
-
 
   @doc """
   Extracts the call stack from `t:Rexbug.Printing.Call.t/0` `dump` field.
@@ -235,16 +241,16 @@ defmodule Rexbug.Printing do
   if you specify `" :: stack"` in `Rexbug.start/2`'s trace pattern,
   it will be nil or empty otherwise.
   """
-  @spec extract_stack(String.t) :: [String.t]
+  @spec extract_stack(String.t()) :: [String.t()]
   def extract_stack(dump) do
     String.split(dump, "\n")
-    |> Enum.filter( &Regex.match?(~r/Return addr 0x|CP: 0x/, &1) )
+    |> Enum.filter(&Regex.match?(~r/Return addr 0x|CP: 0x/, &1))
     |> Enum.flat_map(&extract_function/1)
   end
 
-  #===========================================================================
+  # ===========================================================================
   # Internal Functions
-  #===========================================================================
+  # ===========================================================================
 
   defp extract_function(line) do
     case Regex.run(~r"^.+\((.+):(.+)/(\d+).+\)$", line, capture: :all_but_first) do
@@ -252,24 +258,23 @@ defmodule Rexbug.Printing do
         m = translate_module_from_dump(m)
         f = strip_single_quotes(f)
         ["#{m}.#{f}/#{arity}"]
+
       nil ->
         []
     end
   end
 
-
   defp strip_single_quotes(str) do
     String.trim(str, "'")
   end
-
 
   defp translate_module_from_dump(module) do
     case strip_single_quotes(module) do
       "Elixir." <> rest ->
         rest
+
       erlang_module ->
         ":#{erlang_module}"
     end
   end
-
 end

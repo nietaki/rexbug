@@ -17,9 +17,10 @@ defmodule RexbugTest do
   end
 
   test "Rexbug.help() uses Elixir syntax" do
-    output = capture_io(fn ->
-      assert :ok = Rexbug.help()
-    end)
+    output =
+      capture_io(fn ->
+        assert :ok = Rexbug.help()
+      end)
 
     assert String.contains?(output, "<mfa> when <guards> :: <actions>")
     assert String.contains?(output, "Mod.fun/_")
@@ -32,5 +33,4 @@ defmodule RexbugTest do
   test "Rexbug.stop_sync() when Rexbug isn't started" do
     assert :not_started = Rexbug.stop_sync()
   end
-
 end

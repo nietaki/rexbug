@@ -1,9 +1,7 @@
 defmodule Rexbug.TranslatorTest do
-
   use ExUnit.Case
   import Rexbug.Translator
   doctest Rexbug.Translator
-
 
   describe "Translator.translate/1" do
     test "translates Foo.Bar.baz right" do
@@ -31,7 +29,9 @@ defmodule Rexbug.TranslatorTest do
 
     test "actions" do
       assert {:ok, '\'cowboy\' -> return'} == translate(":cowboy :: return")
-      assert {:ok, '\'cowboy\':\'fun\'() -> return;stack'} == translate(":cowboy.fun() :: return;stack")
+
+      assert {:ok, '\'cowboy\':\'fun\'() -> return;stack'} ==
+               translate(":cowboy.fun() :: return;stack")
     end
 
     test "parsing rubbish" do
@@ -152,14 +152,13 @@ defmodule Rexbug.TranslatorTest do
     end
   end
 
-
   describe "Translator.translate_options/1" do
     test "returns empty list for an empty list" do
       assert {:ok, []} == translate_options([])
     end
 
     test "passes through irrelevant options" do
-      assert {:ok, [abc: :def, foo: :bar]} == translate_options([abc: :def, foo: :bar])
+      assert {:ok, [abc: :def, foo: :bar]} == translate_options(abc: :def, foo: :bar)
     end
 
     test "returns an error for invalid options" do
@@ -168,7 +167,8 @@ defmodule Rexbug.TranslatorTest do
     end
 
     test "translates the file options right" do
-      assert {:ok, [file: 'a.txt', print_file: 'b.txt']} == translate_options(file: "a.txt", print_file: "b.txt")
+      assert {:ok, [file: 'a.txt', print_file: 'b.txt']} ==
+               translate_options(file: "a.txt", print_file: "b.txt")
     end
   end
 
@@ -183,7 +183,6 @@ defmodule Rexbug.TranslatorTest do
     end
   end
 
-
   describe "Translator.translate/1 translating guards" do
     test "a simple is_integer()" do
       res = translate(":erlang.term_to_binary(x) when is_integer(x)")
@@ -197,7 +196,6 @@ defmodule Rexbug.TranslatorTest do
     test "a simple guard negation is_integer() with a helper function" do
       assert_guards('not is_integer(X)', "not is_integer(x)")
     end
-
 
     test "alternative of two guards" do
       assert_guards('(is_integer(X) orelse is_float(X))', "is_integer(x) or is_float(x)")
@@ -234,8 +232,15 @@ defmodule Rexbug.TranslatorTest do
     end
 
     test "operator precedence" do
-      assert_guards('((is_nil(X) andalso is_nil(Y)) orelse is_nil(Z))', "is_nil(x) and is_nil(y) or is_nil(z)")
-      assert_guards('(is_nil(X) orelse (is_nil(Y) andalso is_nil(Z)))', "is_nil(x) or is_nil(y) and is_nil(z)")
+      assert_guards(
+        '((is_nil(X) andalso is_nil(Y)) orelse is_nil(Z))',
+        "is_nil(x) and is_nil(y) or is_nil(z)"
+      )
+
+      assert_guards(
+        '(is_nil(X) orelse (is_nil(Y) andalso is_nil(Z)))',
+        "is_nil(x) or is_nil(y) and is_nil(z)"
+      )
     end
 
     test "nil translation" do
@@ -244,30 +249,25 @@ defmodule Rexbug.TranslatorTest do
     end
   end
 
-
   defp assert_args(expected, input) do
     input = ":a.b(#{input}, 0)"
     assert {:ok, '\'a\':\'b\'(' ++ expected ++ ', 0)'} == translate(input)
   end
-
 
   defp assert_args_error(input) do
     input = ":a.b(#{input}, 0)"
     assert {:error, _} = translate(input)
   end
 
-
   defp assert_guards(expected, input) do
     input = ":a.b(x, y, z) when #{input}"
     assert {:ok, '\'a\':\'b\'(X, Y, Z) when ' ++ expected} == translate(input)
   end
 
-
   defp assert_guards_error(input) do
     input = ":a.b(x, y, z) when #{input}"
     assert {:error, _} = translate(input)
   end
-
 
   test "author's assumptions" do
     assert {:{}, _line, []} = Code.string_to_quoted!("{}")
@@ -278,5 +278,4 @@ defmodule Rexbug.TranslatorTest do
     assert {:{}, _line, [1, 2, 3, 4, 5]} = Code.string_to_quoted!("{1, 2, 3, 4, 5}")
     assert {:{}, _line, [1, 2, 3, 4, 5, 6]} = Code.string_to_quoted!("{1, 2, 3, 4, 5, 6}")
   end
-
 end

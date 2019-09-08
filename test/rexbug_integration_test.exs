@@ -1,18 +1,18 @@
 defmodule RexbugIntegrationTest do
-
-  use ExUnit.Case, async: false # we're instrumenting the system, let's not run stuff in parallel
+  # we're instrumenting the system, let's not run stuff in parallel
+  use ExUnit.Case, async: false
 
   import ExUnit.CaptureIO
 
   @moduletag :integration
 
-  #===========================================================================
+  # ===========================================================================
   # Integration tests
-  #===========================================================================
+  # ===========================================================================
 
-  #---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   # Invocation validation
-  #---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
 
   describe "invocation validation" do
     test "module", do: validate(":crypto")
@@ -21,7 +21,10 @@ defmodule RexbugIntegrationTest do
     test "zero arity function in an elixir module, with parens", do: validate("Foo.Bar.abc()")
     test "explicit zero arity function", do: validate("Foo.Bar.abc/0")
     test "explicit 3 arity function", do: validate("Foo.Bar.xyz/3")
-    test "zero arity function in an elixir module, with actions", do: validate("Foo.Bar.abc :: return")
+
+    test "zero arity function in an elixir module, with actions",
+      do: validate("Foo.Bar.abc :: return")
+
     test "multiple actions", do: validate("Foo.Bar.abc :: return;stack")
     test "no actions", do: validate("Foo.Bar.abc :: ")
     test "no actions and no space after ::", do: validate("Foo.Bar.abc ::")
@@ -89,38 +92,41 @@ defmodule RexbugIntegrationTest do
     end
   end
 
-  #===========================================================================
+  # ===========================================================================
   # Utility functions
-  #===========================================================================
+  # ===========================================================================
 
   defp validate(elixir_invocation, options \\ []) do
     options = [time: 20, procs: [self()]] ++ options
+
     capture_io(fn ->
       assert {1, y} = res = Rexbug.start(elixir_invocation, options)
+
       case is_integer(y) do
         true ->
           :all_good
+
         _ ->
-          flunk(inspect(res) <> " returned by Rexbug.start()" )
+          flunk(inspect(res) <> " returned by Rexbug.start()")
       end
+
       assert stop_safely()
     end)
   end
-
 
   defp refute_triggers(trigger_fun, spec) do
     assert_triggers(trigger_fun, spec, false)
   end
 
-
   defp assert_triggers(trigger_fun, spec, should_trigger \\ true)
-  when is_function(trigger_fun, 0) and is_binary(spec) do
+       when is_function(trigger_fun, 0) and is_binary(spec) do
     capture_io(fn ->
       me = self()
-      tell_me = fn(msg) -> send me, {:triggered, msg} end
+      tell_me = fn msg -> send(me, {:triggered, msg}) end
       options = [time: 100, procs: [me], print_fun: tell_me]
       assert {1, _} = Rexbug.start(spec, options)
       trigger_fun.()
+
       triggered =
         receive do
           {:triggered, _msg} ->
@@ -131,6 +137,7 @@ defmodule RexbugIntegrationTest do
             Rexbug.stop_sync()
             false
         end
+
       case should_trigger do
         true -> assert(triggered, "the function should trigger `#{spec}`, but it didn't")
         false -> assert(!triggered, "the function shouldn't trigger `#{spec}`, but it did")
@@ -138,9 +145,7 @@ defmodule RexbugIntegrationTest do
     end)
   end
 
-
   defp stop_safely() do
     assert Rexbug.stop_sync() in [:not_started, :stopped]
   end
-
 end
