@@ -18,6 +18,19 @@ defmodule Rexbug.PrintingTest do
       msg = [what: "is this?"]
       assert msg == Printing.from_erl(msg)
     end
+
+    test "handles a problematic message with code_server" do
+      pid = self()
+
+      msg =
+        {:send,
+         {
+           {:code_call, pid, {:ensure_loaded, Inspect}},
+           :code_server
+         }, {pid, {IEx.Evaluator, :init, 4}}, {18, 2, 37, 897_140}}
+
+      assert %Printing.Send{} = Printing.from_erl(msg)
+    end
   end
 
   describe "Printing.format/_" do
