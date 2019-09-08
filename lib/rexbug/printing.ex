@@ -166,7 +166,9 @@ defmodule Rexbug.Printing do
   """
   @spec print(tuple()) :: :ok
   def print(message) do
-    IO.puts("\n" <> format(message))
+    # this is not a 2 arg function just so that no-one passes it as the
+    # print_fun to :redbug, the second argument is not an accumulator
+    print_with_opts(message, [])
   end
 
   @doc false
