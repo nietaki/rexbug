@@ -163,38 +163,38 @@ defmodule Rexbug do
 
   ## General options
 
-  | option | default&nbsp;value | meaning |
-  | --- | --- | --- |
-  | time | `15_000` | stop tracing after this many milliseconds |
-  | msgs | `10` | stop tracing after this many messages |
-  | target | `Node.self()` | node to trace on |
-  | cookie | host cookie | target node cookie |
-  | blocking | `false` | block on `start/2` and return a list of messages. [see comment](#start/2-blocking) |
-  | arity | `false` | print arity instead of argument list |
-  | buffered | `false` | buffer messages till end of trace |
-  | discard | `false` | discard messages (when counting) |
-  | max_queue | `5_000` | fail if internal queue gets this long |
-  | max\_msg\_size | `50_000` | fail if seeing a message this big |
-  | procs | `:all` | (list of) Erlang process(es) to include when tracing. [see comment](#start/2-procs) |
+  | option         | default       | meaning                                                                             |
+  | ---            | ---           | ---                                                                                 |
+  | time           | `15_000`      | stop tracing after this many milliseconds                                           |
+  | msgs           | `10`          | stop tracing after this many messages                                               |
+  | target         | `Node.self()` | node to trace on                                                                    |
+  | cookie         | host cookie   | target node cookie                                                                  |
+  | blocking       | `false`       | block on `start/2` and return a list of messages. [see comment](#start/2-blocking)  |
+  | arity          | `false`       | print arity instead of argument list                                                |
+  | buffered       | `false`       | buffer messages till end of trace                                                   |
+  | discard        | `false`       | discard messages (when counting)                                                    |
+  | max_queue      | `5_000`       | fail if internal queue gets this long                                               |
+  | max\_msg\_size | `50_000`      | fail if seeing a message this big                                                   |
+  | procs          | `:all`        | (list of) Erlang process(es) to include when tracing. [see comment](#start/2-procs) |
 
   ## Print-related options
-  | option | default&nbsp;value | meaning |
-  | --- | --- | --- |
-  | print_calls | `true` | print calls |
-  | print_file | standard_io | if provided, prints messages to the specified file |
-  | print_msec | `false` | print milliseconds on timestamps |
-  | print_depth | `999_999` | formatting depth for `"~P"` |
-  | print_re | `""` | print only messages that match this regex |
-  | print_return | `true` | if set to `false`, won't print the return values. Relevant only if `return` action is specified |
-  | print_fun | none | Custom print handler. [see comment](#start/2-print_fun) |
+  | option       | default     | meaning                                                                                         |
+  | ---          | ---         | ---                                                                                             |
+  | print_calls  | `true`      | print calls                                                                                     |
+  | print_file   | standard_io | if provided, prints messages to the specified file                                              |
+  | print_msec   | `false`     | print milliseconds on timestamps                                                                |
+  | print_depth  | `999_999`   | formatting depth for `"~P"`                                                                     |
+  | print_re     | `""`        | print only messages that match this regex                                                       |
+  | print_return | `true`      | if set to `false`, won't print the return values. Relevant only if `return` action is specified |
+  | print_fun    | none        | Custom print handler. [see comment](#start/2-print_fun)                                         |
 
   ## Trace file related options
 
-  | option | default&nbsp;value | meaning |
-  | --- | --- | --- |
-  | file | none | use a trc file based on this name |
-  | file_size | `1` | size of each trc file |
-  | file_count | `8` | number of trc files |
+  | option     | default | meaning                           |
+  | ---        | ---     | ---                               |
+  | file       | none    | use a trc file based on this name |
+  | file_size  | `1`     | size of each trc file             |
+  | file_count | `8`     | number of trc files               |
 
   ## Options comments
 
@@ -292,3 +292,4 @@ defmodule Rexbug do
     Keyword.merge(default_options, opts)
   end
 end
+
