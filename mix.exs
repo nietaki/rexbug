@@ -84,7 +84,7 @@ defmodule Rexbug.Mixfile do
 
       # test/housekeeping stuff
       {:excoveralls, ">= 0.4.0", optional: true, only: :test},
-      {:ex_doc, ">= 0.18.0", optional: true},
+      {:ex_doc, ">= 0.18.0", optional: true, only: :dev},
       {:mix_test_watch, ">= 0.5.0", optional: true, runtime: false}
     ]
   end
