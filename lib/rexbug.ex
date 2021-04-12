@@ -292,4 +292,3 @@ defmodule Rexbug do
     Keyword.merge(default_options, opts)
   end
 end
-
