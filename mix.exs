@@ -3,6 +3,7 @@ defmodule Rexbug.Mixfile do
 
   # RELEASE CHECKLIST
   # - update the version here
+  # - update CHANGELOG.md
   # - update "Installation" section in the README with the new version
   # - check if README is outdated
   # - make sure there's no obviously missing or outdated docs
@@ -13,7 +14,7 @@ defmodule Rexbug.Mixfile do
   def project do
     [
       app: :rexbug,
-      version: "1.0.4",
+      version: "1.0.5",
       elixir: "~> 1.3",
       package: package(),
       elixirc_paths: elixirc_paths(Mix.env()),
