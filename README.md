@@ -1,41 +1,41 @@
 ![rexbug logo](assets/logo_horizontal_h150px.png)
 
-`Rexbug` is a thin Elixir wrapper for [`:redbug`](https://hex.pm/packages/redbug) 
-production-friendly Erlang tracing debugger. 
-It tries to preserve [`:redbug`](https://hex.pm/packages/redbug)'s simple and 
+`Rexbug` is a thin Elixir wrapper for [`:redbug`](https://hex.pm/packages/redbug)
+production-friendly Erlang tracing debugger.
+It tries to preserve [`:redbug`](https://hex.pm/packages/redbug)'s simple and
 intuitive interface while making it more convenient to use by Elixir developers.
 
 [![travis badge](https://travis-ci.org/nietaki/rexbug.svg?branch=master)](https://travis-ci.org/nietaki/rexbug)
-[![Coverage Status](https://coveralls.io/repos/github/nietaki/rexbug/badge.svg?branch=master)](https://coveralls.io/github/nietaki/rexbug?branch=master) 
-[![Hex.pm](https://img.shields.io/hexpm/v/rexbug.svg)](https://hex.pm/packages/rexbug) 
-[![docs](https://img.shields.io/badge/docs-hexdocs-yellow.svg)](https://hexdocs.pm/rexbug/) 
+[![Coverage Status](https://coveralls.io/repos/github/nietaki/rexbug/badge.svg?branch=master)](https://coveralls.io/github/nietaki/rexbug?branch=master)
+[![Hex.pm](https://img.shields.io/hexpm/v/rexbug.svg)](https://hex.pm/packages/rexbug)
+[![docs](https://img.shields.io/badge/docs-hexdocs-yellow.svg)](https://hexdocs.pm/rexbug/)
 
 # README
 
 ## What does it do?
 
-It's an Elixir [tracing](https://en.wikipedia.org/wiki/Tracing_(software)) - 
+It's an Elixir [tracing](https://en.wikipedia.org/wiki/Tracing_(software)) -
 based debugger. It allows you to connect to a live Elixir system and get
 information when some code inside it is executed. The "some code" can be a
 whole module, a specific function in the module, or some function, but only
 if it's called with some specific arguments. The information you can get
 is the function arguments, its result and the stack trace.
 
-If you want to you can narrow the tracing down to a specific process, 
+If you want to you can narrow the tracing down to a specific process,
 investigate a remote node or look at the messages sent between processes.
 
-Rexbug is also production-system-friendly. It has sensible limits for both time 
+Rexbug is also production-system-friendly. It has sensible limits for both time
 and amount of trace events after which it stops tracing. This means you won't
 accidentally overload the system and flood your console with debug information
 if your trace pattern wasn't specific enough.
 
 ## How does it work?
 
-Rexbug uses unmodified [`:redbug`](https://hex.pm/packages/redbug) library 
-underneath. It translates Elixir syntax to the Erlang format expected by 
+Rexbug uses unmodified [`:redbug`](https://hex.pm/packages/redbug) library
+underneath. It translates Elixir syntax to the Erlang format expected by
 [`:redbug`](https://hex.pm/packages/redbug).
 
-[`:redbug`](https://hex.pm/packages/redbug) in turn interacts with the 
+[`:redbug`](https://hex.pm/packages/redbug) in turn interacts with the
 Erlang trace facility.
 It will instruct the Erlang VM to generate so called
 "trace messages" when certain events (such as a particular
@@ -51,7 +51,7 @@ are printed.
 
 ## Installation
 
-The package can be installed by adding `Rexbug` to your list of dependencies 
+The package can be installed by adding `Rexbug` to your list of dependencies
 in `mix.exs`:
 
 ```elixir
@@ -60,10 +60,35 @@ def deps do
 end
 ```
 
-After you've added `Rexbug` to your project, there's nothing left to do - you 
+After you've added `Rexbug` to your project, there's nothing left to do - you
 can start debugging it at your convenience.
 
 ## Examples
+
+### Tracing a single function
+
+The general syntax is `Rexbug.start("ModuleName.function_name/_")`.
+The `/_` tells Rexbug we're interested in any arity of the function.
+
+```Elixir
+iex(3)> Rexbug.start("Map.get/_ :: return") # asking for the return value too
+{105, 2}
+iex(4)> Map.get(%{}, :foo)
+nil
+
+# 10:49:02 #PID<0.1057.0> IEx.Evaluator.init/4
+# Map.get(%{}, :foo)
+
+# 10:49:02 #PID<0.1057.0> IEx.Evaluator.init/4
+# Map.get(%{}, :foo, nil)
+
+# 10:49:02 #PID<0.1057.0> IEx.Evaluator.init/4
+# Map.get/3 -> nil
+
+# 10:49:02 #PID<0.1057.0> IEx.Evaluator.init/4
+# Map.get/2 -> nil
+redbug done, timeout - 2
+```
 
 ### Tracing a whole module
 
@@ -140,12 +165,12 @@ redbug done, timeout - 2
 
 ## Motivation
 
-I was discussing investigating some unexpected behaviour in an Elixir project with 
+I was discussing investigating some unexpected behaviour in an Elixir project with
 [one of my colleagues](https://github.com/sylane) and he rightfully suggested
-using a tracing debugger to get to the bottom of it. The tool he had the most 
-experience with was `:redbug` and it soon turned out it's possible to use from 
+using a tracing debugger to get to the bottom of it. The tool he had the most
+experience with was `:redbug` and it soon turned out it's possible to use from
 `iex` and with Elixir code, as long as you know some Erlang and are mindful
-of some gotchas. 
+of some gotchas.
 
 I really liked how `:redbug` was designed, but wished using it with Elixir was
 more streamlined...
@@ -177,8 +202,8 @@ Rexbug.start("Map.new/_ :: return;stack")
 ## Known issues/limitations
 
 - In the trace patterns `"Mod.fun"` implicitly translates to `"Mod.fun()"`, which
-  is equivalent to `"Mod.fun/0"`. To target the function with any arity, use 
-  `"Mod.fun/_"` or `"Mod.fun/any"` 
+  is equivalent to `"Mod.fun/0"`. To target the function with any arity, use
+  `"Mod.fun/_"` or `"Mod.fun/any"`
 
 ## FAQ
 
@@ -229,7 +254,7 @@ redbug done, msg_count - 4
 iex(investigator@shiny)3>
 ```
 
-Instead of pointing to the `Rexbug` and `:redbug` beam files you can just clone 
+Instead of pointing to the `Rexbug` and `:redbug` beam files you can just clone
 this repo and run `iex -S mix` in the root directory:
 
 ```iex
@@ -250,8 +275,8 @@ Good question! There are other projects that give you similar capabilities, like
 or [exrun](https://hex.pm/packages/exrun), both of which look great and are
 definitely more battle-tested than Rexbug.
 
-I'll try to add a brief and unbiased (as much as I can) comparison after I've 
-[spent some time playing with them](https://github.com/nietaki/rexbug/issues/9) 
+I'll try to add a brief and unbiased (as much as I can) comparison after I've
+[spent some time playing with them](https://github.com/nietaki/rexbug/issues/9)
 so I can do make sure I know what I'm talking about.
 
 ### Why "translate" the syntax instead of forking `:redbug` and caling its internals directly?
@@ -259,15 +284,15 @@ so I can do make sure I know what I'm talking about.
 There's a number of reasons:
 
 - The performance overhead should be irrelevant. You pay the small additional cost
-  once every time you run `Rexbug.start/2` and it should be negligible compared 
+  once every time you run `Rexbug.start/2` and it should be negligible compared
   to whatever system you're debugging.
 - Since `:redbug` is included as-is you can still use it directly and benefit
   from any new features it might get. Also if your team is split between people
   more comfortable in Erlang and Elixir, everyone can use what they prefer.
 - "time to market" - doing this was the simplest way I could think of to get
-  to a relatively polished library. 
-- This approach didn't seem to limit the possible featureset. All the 
+  to a relatively polished library.
+- This approach didn't seem to limit the possible featureset. All the
   `:redbug` features can still be provided.
-  
+
 In general there weren't enough reasons to do it the other way. I don't rule
 out the possibility of a future rewrite, which wouldn't be too drastic anyways.

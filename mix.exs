@@ -13,7 +13,7 @@ defmodule Rexbug.Mixfile do
   def project do
     [
       app: :rexbug,
-      version: "1.0.3",
+      version: "1.0.4",
       elixir: "~> 1.3",
       package: package(),
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -83,9 +83,9 @@ defmodule Rexbug.Mixfile do
       {:redbug, "~> 1.2"},
 
       # test/housekeeping stuff
-      {:excoveralls, "~> 0.4", only: :test},
-      {:ex_doc, "~> 0.18", only: :dev},
-      {:mix_test_watch, "~> 0.5", only: :dev, runtime: false}
+      {:excoveralls, ">= 0.4.0", optional: true, only: :test},
+      {:ex_doc, ">= 0.18.0", optional: true, only: :dev},
+      {:mix_test_watch, ">= 0.5.0", optional: true, runtime: false}
     ]
   end
 
