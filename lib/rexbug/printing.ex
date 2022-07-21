@@ -69,7 +69,7 @@ defmodule Rexbug.Printing do
 
     def represent(%__MODULE__{hours: h, minutes: m, seconds: s, us: us}, opts) do
       if Keyword.get(opts, :print_msec, false) do
-        "#{format_int(h)}:#{format_int(m)}:#{format_int(s)}.#{format_int(div(us, 1000))}"
+        "#{format_int(h)}:#{format_int(m)}:#{format_int(s)}.#{format_int(div(us, 1000), 3)}"
       else
         "#{format_int(h)}:#{format_int(m)}:#{format_int(s)}"
       end
