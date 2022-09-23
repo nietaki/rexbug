@@ -8,6 +8,7 @@ defmodule Rexbug.Mixfile do
   # - check if README is outdated
   # - make sure there's no obviously missing or outdated docs
   # - commit updated version to master
+  # - check build status
   # - create and push new tag
   #   - git tag -a v1.0.X
   #   - git push origin v1.0.X
