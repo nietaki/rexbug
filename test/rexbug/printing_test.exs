@@ -104,6 +104,13 @@ defmodule Rexbug.PrintingTest do
       assert "# 22:20:04 #PID" <> _rest = Printing.format(msg, print_msec: false)
       assert "# 22:20:04.760 #PID" <> _rest = Printing.format(msg, print_msec: true)
     end
+
+    test "can print with print_msec option set to true with correct number formatting" do
+      msg =
+        {:recv, {1, :foo}, {:c.pid(0, 182, 0), {IEx.Evaluator, :init, 4}}, {1, 2, 3, 4_567}}
+
+      assert "# 01:02:03.004 #PID" <> _rest = Printing.format(msg, print_msec: true)
+    end
   end
 
   describe "Printing.print/1" do
