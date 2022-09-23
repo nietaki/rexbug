@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6](https://github.com/nietaki/rexbug/tree/v1.0.6) - 2022-09-23
+
+- Fix millisecond formatting on sub 100 millisecond values [54](https://github.com/nietaki/rexbug/pull/54)
+
 ## [1.0.5](https://github.com/nietaki/rexbug/tree/v1.0.5) - 2021-04-12
 
 - Fix `no function clause matching in Inspect.Agebra.container_each/6` error happening in Elixir 1.11.0 [48](https://github.com/nietaki/rexbug/pull/48)

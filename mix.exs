@@ -7,6 +7,10 @@ defmodule Rexbug.Mixfile do
   # - update "Installation" section in the README with the new version
   # - check if README is outdated
   # - make sure there's no obviously missing or outdated docs
+  # - commit updated version to master
+  # - create and push new tag
+  #   - git tag -a v1.0.X
+  #   - git push origin v1.0.X
   # - build and publish the hex package
   #   - mix hex.build
   #   - mix hex.publish
@@ -14,7 +18,7 @@ defmodule Rexbug.Mixfile do
   def project do
     [
       app: :rexbug,
-      version: "1.0.5",
+      version: "1.0.6",
       elixir: "~> 1.3",
       package: package(),
       elixirc_paths: elixirc_paths(Mix.env()),
