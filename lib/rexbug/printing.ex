@@ -156,6 +156,13 @@ defmodule Rexbug.Printing do
     end
   end
 
+  defmodule Meta do
+    @type t :: %__MODULE__{}
+    defstruct ~w(msg time)a
+
+    def represent(_struct, _opts), do: nil
+  end
+
   # ===========================================================================
   # Public Functions
   # ===========================================================================
@@ -174,7 +181,12 @@ defmodule Rexbug.Printing do
   @doc false
   @spec print_with_opts(tuple(), Keyword.t()) :: :ok
   def print_with_opts(message, opts) do
-    IO.puts("\n" <> format(message, opts))
+    case format(message, opts) do
+      nil ->
+        :ok
+      formatted ->
+        IO.puts("\n" <> formatted)
+    end
   end
 
   @doc false
@@ -245,6 +257,13 @@ defmodule Rexbug.Printing do
     }
   end
 
+  def from_erl({:meta, msg, _pi, time}) do
+    %Meta{
+      msg: msg,
+      time: Timestamp.from_erl(time)
+    }
+  end
+
   # fallthrough so that you can use it indiscriminately
   def from_erl(message) do
     message
@@ -259,7 +278,7 @@ defmodule Rexbug.Printing do
   end
 
   @doc false
-  def represent(%mod{} = struct, opts) when mod in [Call, Return, Send, Receive] do
+  def represent(%mod{} = struct, opts) when mod in [Call, Return, Send, Receive, Meta] do
     mod.represent(struct, opts)
   end
 
