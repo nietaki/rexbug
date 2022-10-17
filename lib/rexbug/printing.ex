@@ -184,6 +184,7 @@ defmodule Rexbug.Printing do
     case format(message, opts) do
       nil ->
         :ok
+
       formatted ->
         IO.puts("\n" <> formatted)
     end
