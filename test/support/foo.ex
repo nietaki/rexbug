@@ -1,5 +1,7 @@
 defmodule Foo do
+  @moduledoc false
   defmodule Bar do
+    @moduledoc false
     def abc() do
     end
 

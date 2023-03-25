@@ -16,10 +16,16 @@ check:
 	mix test
 	mix format --check-formatted
 	mix coveralls
-	mix credo || exit 0
+	# ignore refactoring opportunities (exit code 8)
+	mix credo --all --verbose || exit $$(( $$? & ~8 ))
 	mix docs
 
 .PHONY: clean
 clean:
 	mix clean
 	mix deps.clean --all
+
+.PHONY: recompile
+recompile: clean
+	mix deps.get
+	mix compile

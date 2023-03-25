@@ -241,8 +241,7 @@ defmodule Rexbug.Translator do
   defp translate_module({:__aliases__, _line, elixir_module}) when is_list(elixir_module) do
     joined =
       [:"Elixir" | elixir_module]
-      |> Enum.map(&Atom.to_string/1)
-      |> Enum.join(".")
+      |> Enum.map_join(".", &Atom.to_string/1)
 
     {:ok, "'#{joined}'"}
   end
@@ -290,8 +289,7 @@ defmodule Rexbug.Translator do
   end
 
   defp translate_arg(string) when is_binary(string) do
-    # TODO: more strict ASCII checking here
-    if String.printable?(string) && byte_size(string) == String.length(string) do
+    if List.ascii_printable?(String.to_charlist(string)) do
       {:ok, "<<\"#{string}\">>"}
     else
       translate_arg({:<<>>, [line: 1], [string]})
@@ -352,8 +350,7 @@ defmodule Rexbug.Translator do
         middle =
           keys
           |> Enum.zip(values)
-          |> Enum.map(fn {k, v} -> "#{k} => #{v}" end)
-          |> Enum.join(", ")
+          |> Enum.map_join(", ", fn {k, v} -> "#{k} => #{v}" end)
 
         "\#{#{middle}}"
       end)

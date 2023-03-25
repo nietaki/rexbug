@@ -24,8 +24,8 @@ jobs:
           MIX_ENV: test
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # not failing on failing credo checks yet
-      - run: mix credo || exit 0
+      # ignore refactoring opportunities (exit code 8)
+      - run: mix credo --all --verbose || exit $(( $? & ~8 ))
       - run: mix docs
       - uses: actions/upload-artifact@v3
         with:

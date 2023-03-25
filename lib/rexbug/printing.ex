@@ -15,6 +15,9 @@ defmodule Rexbug.Printing do
   # ===========================================================================
 
   defmodule MFA do
+    @moduledoc """
+    Represents the redbug {module, function, arity/args} tuple and handles its printing
+    """
     @type t :: %__MODULE__{}
 
     defstruct [
@@ -45,10 +48,7 @@ defmodule Rexbug.Printing do
 
       arep =
         if is_list(a) do
-          middle =
-            a
-            |> Enum.map(&printing_inspect/1)
-            |> Enum.join(", ")
+          middle = Enum.map_join(a, ", ", &printing_inspect/1)
 
           "(#{middle})"
         else
@@ -60,6 +60,9 @@ defmodule Rexbug.Printing do
   end
 
   defmodule Timestamp do
+    @moduledoc """
+    Represents the redbug timestamp tuple and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(hours minutes seconds us)a
 
@@ -87,6 +90,9 @@ defmodule Rexbug.Printing do
   # ---------------------------------------------------------------------------
 
   defmodule Call do
+    @moduledoc """
+    Represents the redbug call info and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(mfa dump from_pid from_mfa time)a
 
@@ -106,12 +112,14 @@ defmodule Rexbug.Printing do
     defp represent_stack(dump, _opts) do
       dump
       |> Printing.extract_stack()
-      |> Enum.map(fn fun_rep -> "\n#   #{fun_rep}" end)
-      |> Enum.join("")
+      |> Enum.map_join(fn fun_rep -> "\n#   #{fun_rep}" end)
     end
   end
 
   defmodule Return do
+    @moduledoc """
+    Represents the redbug function return info and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(mfa return_value from_pid from_mfa time)a
 
@@ -127,6 +135,9 @@ defmodule Rexbug.Printing do
   end
 
   defmodule Send do
+    @moduledoc """
+    Represents the message send info and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(msg to_pid to_mfa from_pid from_mfa time)a
 
@@ -143,6 +154,9 @@ defmodule Rexbug.Printing do
   end
 
   defmodule Receive do
+    @moduledoc """
+    Represents the message receive info and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(msg to_pid to_mfa time)a
 
