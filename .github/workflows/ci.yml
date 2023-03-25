@@ -1,0 +1,50 @@
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
+    strategy:
+      matrix:
+        otp: ["25.3"]
+        elixir: ["1.14.3"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Elixir
+        id: beam
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+      - run: mix deps.get
+      - run: mix test --trace
+      - run: mix format --check-formatted
+      - run: mix coveralls.github
+      # not failing on failing credo checks yet
+      - run: mix credo || exit 0
+      - run: mix docs
+      - uses: actions/upload-artifact@v3
+        with:
+          name: doc
+          path: doc/
+
+      # Don't cache PLTs based on mix.lock hash, as Dialyzer can incrementally update even old ones
+      # Cache key based on Elixir & Erlang version (also useful when running in matrix)
+      - name: Restore PLT cache
+        uses: actions/cache@v3
+        id: plt_cache
+        with:
+          key: |
+            ${{ runner.os }}-${{ steps.beam.outputs.elixir-version }}-${{ steps.beam.outputs.otp-version }}-dev-plt
+          restore-keys: |
+            ${{ runner.os }}-${{ steps.beam.outputs.elixir-version }}-${{ steps.beam.outputs.otp-version }}-dev-plt
+          path: |
+            priv/plts
+
+      # Create PLTs if no cache was found
+      - name: Create PLTs
+        if: steps.plt_cache.outputs.cache-hit != 'true'
+        run: mix dialyzer --plt
+
+      - name: Run dialyzer
+        run: mix dialyzer --format github

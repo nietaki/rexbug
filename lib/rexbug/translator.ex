@@ -117,9 +117,7 @@ defmodule Rexbug.Translator do
 
           nil ->
             # args present, no arity
-            "#{translated_module}#{translated_function}#{translated_args}#{translated_guards}#{
-              translated_actions
-            }"
+            "#{translated_module}#{translated_function}#{translated_args}#{translated_guards}#{translated_actions}"
         end
 
       {:ok, String.to_charlist(translated)}
@@ -228,13 +226,13 @@ defmodule Rexbug.Translator do
 
   defp validate_mfaa(nil, _, _, _), do: {:error, :missing_module}
 
-  defp validate_mfaa(_, nil, args, _) when not (args in [nil, []]),
+  defp validate_mfaa(_, nil, args, _) when args not in [nil, []],
     do: {:error, :missing_function}
 
   defp validate_mfaa(_, nil, _, arity) when arity != nil, do: {:error, :missing_function}
 
   defp validate_mfaa(_, _, args, arity)
-       when not (args in [nil, []]) and arity != nil do
+       when args not in [nil, []] and arity != nil do
     {:error, :both_args_and_arity_provided}
   end
 

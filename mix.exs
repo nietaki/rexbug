@@ -32,6 +32,9 @@ defmodule Rexbug.Mixfile do
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.html": :test,
+        "coveralls.post": :test,
+        "coveralls.detail": :test,
+        "coveralls.github": :test,
         test: :test
       ],
       docs: docs()
@@ -52,17 +55,7 @@ defmodule Rexbug.Mixfile do
   defp elixirc_paths(_), do: ["lib"]
 
   defp aliases do
-    [
-      coveralls: [
-        "coveralls --exclude integration"
-      ],
-      "coveralls.html": [
-        "coveralls.html --exclude integration"
-      ],
-      "coveralls.travis": [
-        "coveralls.travis --exclude integration"
-      ]
-    ]
+    []
   end
 
   defp docs do
@@ -89,8 +82,10 @@ defmodule Rexbug.Mixfile do
       {:redbug, "~> 1.2"},
 
       # test/housekeeping stuff
-      {:excoveralls, ">= 0.4.0", optional: true, only: :test},
+      {:credo, ">= 1.0.0", only: [:dev], optional: true, runtime: false},
+      {:dialyxir, ">= 1.0.0", only: [:dev], optional: true, runtime: false},
       {:ex_doc, ">= 0.18.0", optional: true, only: :dev},
+      {:excoveralls, ">= 0.16.0", optional: true, only: :test},
       {:mix_test_watch, ">= 0.5.0", optional: true, runtime: false}
     ]
   end
