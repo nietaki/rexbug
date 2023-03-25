@@ -1,5 +1,7 @@
 ![rexbug logo](assets/logo_horizontal_h150px.png)
 
+**Note: Development has been moved to the [v2 branch](https://github.com/nietaki/rexbug/tree/v2)**
+
 `Rexbug` is a thin Elixir wrapper for [`:redbug`](https://hex.pm/packages/redbug)
 production-friendly Erlang tracing debugger.
 It tries to preserve [`:redbug`](https://hex.pm/packages/redbug)'s simple and
