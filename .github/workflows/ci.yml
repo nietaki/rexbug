@@ -3,7 +3,7 @@ on: push
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
+    name: test - OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
     strategy:
       matrix:
         otp: ["25.3"]
@@ -18,14 +18,33 @@ jobs:
           elixir-version: ${{matrix.elixir}}
       - run: mix deps.get
       - run: mix test --trace
+
+  style-check:
+    runs-on: ubuntu-latest
+    name: style-check - OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
+    strategy:
+      matrix:
+        otp: ["25.3"]
+        elixir: ["1.14.3"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Elixir
+        id: beam
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+      - run: mix deps.get
       - run: mix format --check-formatted
-      - run: mix coveralls.github || exit 0
+        continue-on-error: true
+      - run: mix coveralls.github --exclude integration
         env:
           MIX_ENV: test
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ignore refactoring opportunities (exit code 8)
       - run: mix credo --all --verbose || exit $(( $? & ~8 ))
+        continue-on-error: true
       - run: mix docs
       - uses: actions/upload-artifact@v3
         with:

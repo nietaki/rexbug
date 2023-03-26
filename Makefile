@@ -15,7 +15,7 @@ install:
 check:
 	mix test
 	mix format --check-formatted
-	mix coveralls
+	mix coveralls --exclude integration
 	# ignore refactoring opportunities (exit code 8)
 	mix credo --all --verbose || exit $$(( $$? & ~8 ))
 	mix docs
