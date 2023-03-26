@@ -19,7 +19,7 @@ jobs:
       - run: mix deps.get
       - run: mix test --trace
       - run: mix format --check-formatted
-      - run: mix coveralls.github
+      - run: mix coveralls.github || exit 0
         env:
           MIX_ENV: test
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

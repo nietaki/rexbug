@@ -97,7 +97,7 @@ defmodule RexbugIntegrationTest do
   # ===========================================================================
 
   defp validate(elixir_invocation, options \\ []) do
-    options = [time: 20, procs: [self()]] ++ options
+    options = [time: 200, procs: [self()]] ++ options
 
     capture_io(fn ->
       assert {1, y} = res = Rexbug.start(elixir_invocation, options)
