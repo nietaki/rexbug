@@ -122,7 +122,7 @@ defmodule RexbugIntegrationTest do
        when is_function(trigger_fun, 0) and is_binary(spec) do
     capture_io(fn ->
       me = self()
-      tell_me = fn msg -> send(me, {:triggered, msg}) end
+      tell_me = fn msg -> tell_me_non_meta(me, msg) end
       options = [time: 100, procs: [me], print_fun: tell_me]
       assert {1, _} = Rexbug.start(spec, options)
       trigger_fun.()
@@ -143,6 +143,13 @@ defmodule RexbugIntegrationTest do
         false -> assert(!triggered, "the function shouldn't trigger `#{spec}`, but it did")
       end
     end)
+  end
+
+  defp tell_me_non_meta(me, msg) do
+    case msg do
+      {:meta, _, _, _} -> :ok
+      _ -> send(me, {:triggered, msg})
+    end
   end
 
   defp stop_safely() do

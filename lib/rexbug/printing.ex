@@ -170,6 +170,22 @@ defmodule Rexbug.Printing do
     end
   end
 
+  defmodule Meta do
+    @moduledoc """
+    Represents redbug meta messages
+    """
+    @type t :: %__MODULE__{}
+    defstruct ~w(event data time)a
+
+    def represent(%__MODULE__{} = struct, opts) do
+      event = printing_inspect(struct.event)
+      data = printing_inspect(struct.data)
+      ts = Timestamp.represent(struct.time, opts)
+      # TODO figure out if anything needs to be printed and if so, what
+      "# #{ts} - META: #{event} #{data}\n"
+    end
+  end
+
   # ===========================================================================
   # Public Functions
   # ===========================================================================
@@ -259,6 +275,16 @@ defmodule Rexbug.Printing do
     }
   end
 
+  # This seems to be sent by redbug to signify the redbug operation has stopped
+  #   PrintFun({meta, stop, dummy, {0, 0, 0, 0}}, Acc)
+  def from_erl({:meta, event, data, time}) do
+    %Meta{
+      event: event,
+      data: data,
+      time: Timestamp.from_erl(time)
+    }
+  end
+
   # fallthrough so that you can use it indiscriminately
   def from_erl(message) do
     message
@@ -273,7 +299,7 @@ defmodule Rexbug.Printing do
   end
 
   @doc false
-  def represent(%mod{} = struct, opts) when mod in [Call, Return, Send, Receive] do
+  def represent(%mod{} = struct, opts) when mod in [Call, Return, Send, Receive, Meta] do
     mod.represent(struct, opts)
   end
 
