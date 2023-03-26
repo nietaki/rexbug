@@ -49,9 +49,13 @@ jobs:
           path: |
             priv/plts
 
+      - name: print restore step cache hit status
+        if: always()
+        run: echo "${{steps.plt_cache.outputs.cache-hit}}"
+
       # Create PLTs if no cache was found
       - name: Create PLTs
-        if: steps.plt_cache.outputs.cache-hit != 'true'
+        if: always() && (steps.plt_cache.outputs.cache-hit != 'true')
         run: mix dialyzer --plt
 
       - name: Run dialyzer

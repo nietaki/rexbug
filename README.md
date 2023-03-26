@@ -11,7 +11,6 @@ intuitive interface while making it more convenient to use by Elixir developers.
 [![Hex.pm](https://img.shields.io/hexpm/dt/rexbug)](https://hex.pm/packages/rexbug)
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/nietaki/rexbug/test.yml?branch=v2&label=tests)
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/nietaki/rexbug/style_check.yml?branch=v2&label=style%20check)
-
 [![Coverage Status](https://coveralls.io/repos/github/nietaki/rexbug/badge.svg?branch=v2)](https://coveralls.io/github/nietaki/rexbug?branch=v2)
 [![docs](https://img.shields.io/badge/docs-hexdocs-yellow.svg)](https://hexdocs.pm/rexbug/)
 
