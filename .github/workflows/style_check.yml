@@ -18,16 +18,19 @@ jobs:
           elixir-version: ${{matrix.elixir}}
       - run: mix deps.get
       - run: mix format --check-formatted
-        continue-on-error: true
       - run: mix coveralls.github --exclude integration
+        if: always()
         env:
           MIX_ENV: test
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ignore refactoring opportunities (exit code 8)
       - run: mix credo --all --verbose || exit $(( $? & ~8 ))
+        if: always()
       - run: mix docs
+        if: always()
       - uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: doc
           path: doc/
@@ -35,6 +38,7 @@ jobs:
       # Don't cache PLTs based on mix.lock hash, as Dialyzer can incrementally update even old ones
       # Cache key based on Elixir & Erlang version (also useful when running in matrix)
       - name: Restore PLT cache
+        if: always()
         uses: actions/cache@v3
         id: plt_cache
         with:
@@ -51,4 +55,5 @@ jobs:
         run: mix dialyzer --plt
 
       - name: Run dialyzer
+        if: always()
         run: mix dialyzer --format github
