@@ -79,13 +79,13 @@ defmodule Rexbug.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:redbug, "~> 1.2"},
+      {:redbug, "~> 2.0"},
 
       # test/housekeeping stuff
-      {:credo, ">= 1.0.0", only: [:dev], optional: true, runtime: false},
+      {:credo, "~> 1.0", only: [:dev], optional: true, runtime: false},
       {:dialyxir, ">= 1.0.0", only: [:dev], optional: true, runtime: false},
       {:ex_doc, ">= 0.18.0", optional: true, only: :dev},
-      {:excoveralls, ">= 0.16.0", optional: true, only: :test},
+      {:excoveralls, "~> 0.16", optional: true, only: :test},
       {:mix_test_watch, ">= 0.5.0", optional: true, runtime: false}
     ]
   end
