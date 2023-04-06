@@ -86,7 +86,7 @@ defmodule Rexbug.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:redbug, "~> 1.2"},
+      {:redbug, "~> 2.0"},
 
       # test/housekeeping stuff
       {:excoveralls, ">= 0.4.0", optional: true, only: :test},
