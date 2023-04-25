@@ -181,8 +181,8 @@ defmodule Rexbug.Printing do
       event = printing_inspect(struct.event)
       data = printing_inspect(struct.data)
       ts = Timestamp.represent(struct.time, opts)
-      # TODO figure out if anything needs to be printed and if so, what
-      "# #{ts} - META: #{event} #{data}\n"
+      _ = "# #{ts} - META: #{event} #{data}\n"
+      nil
     end
   end
 
@@ -203,8 +203,15 @@ defmodule Rexbug.Printing do
 
   @doc false
   @spec print_with_opts(tuple(), Keyword.t()) :: :ok
+
   def print_with_opts(message, opts) do
-    IO.puts("\n" <> format(message, opts))
+    case format(message, opts) do
+      nil ->
+        :ok
+
+      s when is_binary(s) ->
+        IO.puts("\n" <> s)
+    end
   end
 
   @doc false

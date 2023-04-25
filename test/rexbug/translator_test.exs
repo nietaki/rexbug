@@ -84,6 +84,10 @@ defmodule Rexbug.TranslatorTest do
       assert {:ok, [:send, '\'ets\'']} = translate([:send, ":ets"])
       assert {:error, :invalid_trace_pattern_type} = translate([:send, ":ets", :wat])
     end
+
+    test "rejects h | t patterns not inside a list" do
+      assert {:error, _} = translate(":cowboy(h | t)")
+    end
   end
 
   describe "Translator.translate/1 translating args" do
@@ -127,6 +131,14 @@ defmodule Rexbug.TranslatorTest do
 
     test "lists" do
       assert_args('[1, X], 3', "[1, x], 3")
+    end
+
+    test "matching on head and tail" do
+      assert_args('[1 | X]', "[1 | x]")
+    end
+
+    test "matching on heads and tail" do
+      assert_args('[1, 2 | X]', "[1, 2 | x]")
     end
 
     test "tuples" do

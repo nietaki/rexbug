@@ -22,7 +22,7 @@ intuitive interface while making it more convenient to use by Elixir developers.
 - [ ] verify all redbug 2.x options are supported
 - [x] add and test matching on structs
 - [x] investigate is_struct() guard
-- [ ] investigate matching on heads of lists
+- [x] investigate matching on heads of lists
 - [ ] investigate matching on records
 - [ ] fix all TODOs, make sure style checks are passing
 - [ ] update readme from examples from the new tests

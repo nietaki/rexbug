@@ -125,6 +125,17 @@ defmodule Rexbug.PrintingTest do
 
       assert String.contains?(io, "#PID<")
     end
+
+    test "ignores meta messages" do
+      msg = {:meta, :stop, :dummy, {0, 0, 0, 0}}
+
+      io =
+        capture_io(fn ->
+          Rexbug.Printing.print(msg)
+        end)
+
+      assert String.length(io) == 0
+    end
   end
 
   describe "Printing.extract_stack/1" do

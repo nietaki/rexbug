@@ -57,6 +57,22 @@ defmodule RexbugIntegrationTest do
     test "multiple trace patterns", do: validate([":ets", ":dets"])
   end
 
+  @tag :coveralls_safe
+  test "stop_sync/0 works" do
+    options = [time: 20_000, procs: [self()]]
+
+    capture_io(fn ->
+      assert {1, _} = Rexbug.start(":crypto", options)
+      redbug_process = Process.whereis(:redbug)
+      assert redbug_process != nil
+      assert is_pid(redbug_process)
+
+      Rexbug.stop_sync()
+      redbug_process = Process.whereis(:redbug)
+      assert redbug_process == nil
+    end)
+  end
+
   describe "actual integration tests" do
     test "simple case" do
       trigger = fn -> Foo.Bar.abc() end
@@ -90,12 +106,14 @@ defmodule RexbugIntegrationTest do
       refute_triggers(trigger_same, "Foo.Bar.xyz(x, _, [_, x])")
     end
 
-    # NOTE not implemented
-    @tag :skip
     test "matching on heads of lists" do
       trigger = fn -> Foo.Bar.xyz(1, 1, [1, :four]) end
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_ | _])")
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, [x | y])")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, _, [x | y])")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, [x, y | empty_list])")
+      refute_triggers(trigger, "Foo.Bar.xyz(_, _, [x, y, z | not_here])")
+      refute_triggers(trigger, "Foo.Bar.xyz(y, _, [x | y])")
     end
 
     test "module name as an argument" do

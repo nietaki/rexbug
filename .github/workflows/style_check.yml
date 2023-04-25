@@ -18,7 +18,7 @@ jobs:
           elixir-version: ${{matrix.elixir}}
       - run: mix deps.get
       - run: mix format --check-formatted
-      - run: mix coveralls.github --exclude integration
+      - run: mix coveralls.github --exclude integration --include coveralls_safe
         if: always()
         env:
           MIX_ENV: test

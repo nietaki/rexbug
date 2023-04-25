@@ -15,10 +15,14 @@ install:
 check:
 	mix test
 	mix format --check-formatted
-	mix coveralls --exclude integration
+	mix coveralls --exclude integration --include coveralls_safe
 	# ignore refactoring opportunities (exit code 8)
 	mix credo --all --verbose || exit $$(( $$? & ~8 ))
 	mix docs
+
+.PHONY: coveralls.html
+coveralls.html:
+	mix coveralls.html --exclude integration --include coveralls_safe
 
 .PHONY: clean
 clean:

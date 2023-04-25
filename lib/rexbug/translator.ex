@@ -315,6 +315,13 @@ defmodule Rexbug.Translator do
     |> map_success(fn elements -> "[#{Enum.join(elements, ", ")}]" end)
   end
 
+  # for situations like [h1, h2 | t]
+  defp translate_arg({:|, _line, [h, t]}) do
+    with {:ok, th} <- translate_arg(h),
+         {:ok, tt} <- translate_arg(t),
+         do: {:ok, "#{th} | #{tt}"}
+  end
+
   defp translate_arg({:-, _line, [num]}) when is_integer(num) do
     with {:ok, translated_num} = translate_arg(num),
       do: {:ok, "-#{translated_num}"}
