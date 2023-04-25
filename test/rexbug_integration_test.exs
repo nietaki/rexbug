@@ -77,6 +77,37 @@ defmodule RexbugIntegrationTest do
       assert_triggers(trigger, "Foo.Bar.xyz(x, _, _) when is_integer(x) and x > 0")
     end
 
+    test "matching to the same variable on same argument values" do
+      trigger_same = fn -> Foo.Bar.xyz(1, 1, [1, :four]) end
+      trigger_diff = fn -> Foo.Bar.xyz(1, 2, [3, :four]) end
+
+      assert_triggers(trigger_same, "Foo.Bar.xyz(x, x, _)")
+      refute_triggers(trigger_same, "Foo.Bar.xyz(x, _, x)")
+      refute_triggers(trigger_diff, "Foo.Bar.xyz(x, x, _)")
+
+      assert_triggers(trigger_same, "Foo.Bar.xyz(x, _, [x, _])")
+      refute_triggers(trigger_diff, "Foo.Bar.xyz(x, _, [x, _])")
+      refute_triggers(trigger_same, "Foo.Bar.xyz(x, _, [_, x])")
+    end
+
+    # NOTE not implemented
+    @tag :skip
+    test "matching on heads of lists" do
+      trigger = fn -> Foo.Bar.xyz(1, 1, [1, :four]) end
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_ | _])")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, [x | y])")
+    end
+
+    test "module name as an argument" do
+      trigger = fn -> Foo.Bar.xyz(Foo.Bar, "b", [3, :four]) end
+      assert_triggers(trigger, "Foo.Bar.xyz/_")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, _)")
+      assert_triggers(trigger, "Foo.Bar.xyz(Foo.Bar, _, _)")
+
+      refute_triggers(trigger, "Foo.Bar.xyz(13, _, _)")
+      refute_triggers(trigger, "Foo.Bar.xyz(Foo, _, _)")
+    end
+
     test "list manipulation in guards" do
       trigger = fn -> Foo.Bar.xyz(1, "b", [3, :four]) end
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_, _])")
@@ -89,6 +120,43 @@ defmodule RexbugIntegrationTest do
       refute_triggers(trigger, "Foo.Bar.xyz(_, _, [_, :wat])")
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_, :four])")
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, ls) when tl(ls) == [:four]")
+    end
+  end
+
+  describe "pattern matching structs" do
+    test "matching using :__struct__" do
+      struct = %Foo.Bar{ba: 1}
+      trigger = fn -> Foo.foo(struct) end
+      assert_triggers(trigger, "Foo.foo(%{__struct__: _})")
+      assert_triggers(trigger, "Foo.foo(%{:__struct__ => _})")
+      assert_triggers(trigger, "Foo.foo(%{__struct__: Foo.Bar})")
+      assert_triggers(trigger, "Foo.foo(%{__struct__: _, ba: 1})")
+
+      refute_triggers(trigger, "Foo.foo(%{__struct__: Foo})")
+      refute_triggers(trigger, "Foo.foo(%{__struct__: Foo.Bar, ba: 2})")
+    end
+
+    test "matching using %Module.Name{}" do
+      struct = %Foo.Bar{ba: 1}
+      trigger = fn -> Foo.foo(struct) end
+      assert_triggers(trigger, "Foo.foo(%Foo.Bar{})")
+      assert_triggers(trigger, "Foo.foo(%Foo.Bar{ba: 1})")
+
+      refute_triggers(trigger, "Foo.foo(%Foo{})")
+      refute_triggers(trigger, "Foo.foo(%Foo{ba: 1})")
+      refute_triggers(trigger, "Foo.foo(%Foo.Bar{ba: 2})")
+    end
+
+    # is_map_key not supported by redbug
+    @tag :skip
+    test "matching using is_struct/1 guard" do
+      struct = %Foo.Bar{ba: 1}
+      trigger = fn -> Foo.foo(struct) end
+      trigger_map = fn -> Foo.foo(%{}) end
+
+      assert_triggers(trigger, "Foo.foo(s) when is_map(s)")
+      refute_triggers(trigger_map, "Foo.foo(s) when is_struct(s)")
+      assert_triggers(trigger, "Foo.foo(s) when is_struct(s)")
     end
   end
 

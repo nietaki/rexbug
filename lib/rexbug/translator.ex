@@ -357,6 +357,14 @@ defmodule Rexbug.Translator do
     end
   end
 
+  # structs
+  defp translate_arg(
+         {:%, line, [{:__aliases__, _line2, _module_segments} = module, {:%{}, _line3, map_kvs}]}
+       ) do
+    new_kv = {:__struct__, module}
+    translate_arg({:%{}, line, [new_kv | map_kvs]})
+  end
+
   # there's a catch here:
   # iex(12)> Code.string_to_quoted!("{1,2,3}")
   # {:{}, [line: 1], [1, 2, 3]}
@@ -378,6 +386,10 @@ defmodule Rexbug.Translator do
     |> Atom.to_string()
     |> String.capitalize()
     |> wrap_in_ok()
+  end
+
+  defp translate_arg({:__aliases__, _line, elixir_module} = module) when is_list(elixir_module) do
+    translate_module(module)
   end
 
   defp translate_arg(arg) do

@@ -14,6 +14,20 @@ production-friendly Erlang tracing debugger.
 It tries to preserve [`:redbug`](https://hex.pm/packages/redbug)'s simple and
 intuitive interface while making it more convenient to use by Elixir developers.
 
+
+## Non-exhaustive 2.0 checklist
+
+- [x] test matching on map keys
+- [x] test binding to the same variable
+- [ ] verify all redbug 2.x options are supported
+- [x] add and test matching on structs
+- [x] investigate is_struct() guard
+- [ ] investigate matching on heads of lists
+- [ ] investigate matching on records
+- [ ] fix all TODOs, make sure style checks are passing
+- [ ] update readme from examples from the new tests
+- [ ] establish the range of Elixir/OTP version where rexbug 2.0 can be used
+
 # README
 
 ## What does it do?

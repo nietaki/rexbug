@@ -143,12 +143,18 @@ defmodule Rexbug.TranslatorTest do
     test "maps" do
       assert_args('\#{1 => One, \'two\' => 2}', "%{1 => one, :two => 2}")
       assert_args('\#{\'name\' => _}', "%{name: _}")
+      assert_args('\#{\'__struct__\' => \'Elixir.Foo.Bar\'}', "%{__struct__: Foo.Bar}")
       assert_args('\#{}', "%{}")
       assert_args('\#{\'foo\' => \#{1 => _}}', "%{foo: %{1 => _}}")
     end
 
     test "maps with invalid matching of variable in the key" do
       assert_args_error("%{name => _}")
+    end
+
+    test "structs" do
+      assert_args('\#{\'__struct__\' => \'Elixir.Foo.Bar\'}', "%Foo.Bar{}")
+      assert_args('\#{\'__struct__\' => \'Elixir.Foo.Bar\', \'ba\' => 1}', "%Foo.Bar{ba: 1}")
     end
   end
 
@@ -199,6 +205,15 @@ defmodule Rexbug.TranslatorTest do
 
     test "alternative of two guards" do
       assert_guards('(is_integer(X) orelse is_float(X))', "is_integer(x) or is_float(x)")
+    end
+
+    # is_map_key not supported by redbug
+    @tag :skip
+    test "is_struct translates to more basic guards" do
+      basic = ":a.b(x) when (is_map(x) and is_map_key(:__struct__, x))"
+      input = ":a.b(x) when is_struct(x)"
+      assert {:ok, expected} = translate(basic)
+      assert {:ok, expected} == translate(input)
     end
 
     test "comparison in guards" do
