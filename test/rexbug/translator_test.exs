@@ -188,6 +188,16 @@ defmodule Rexbug.TranslatorTest do
       assert {:ok, [file: 'a.txt', print_file: 'b.txt']} ==
                translate_options(file: "a.txt", print_file: "b.txt")
     end
+
+    test "only accepts Regex struct as print_re" do
+      assert {:ok, [print_re: ~r/foo/]} == translate_options(print_re: ~r/foo/)
+      assert {:ok, [print_re: nil]} == translate_options(print_re: nil)
+
+      assert {:error, :invalid_print_re} = translate_options(print_re: 1)
+      assert {:error, :invalid_print_re} = translate_options(print_re: :foo)
+      assert {:error, :invalid_print_re} = translate_options(print_re: "foo")
+      assert {:error, :invalid_print_re} = translate_options(print_re: 'foo')
+    end
   end
 
   describe "Translator.split_to_mfag_and_actions!/1" do

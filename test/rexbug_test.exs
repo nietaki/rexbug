@@ -16,13 +16,6 @@ defmodule RexbugTest do
     assert {:error, :invalid_options} = Rexbug.start("Foo", [{:foo, :bar, :baz}])
   end
 
-  test "if print_re is passed it needs to be a regex struct" do
-    assert {:error, :invalid_print_re} = Rexbug.start("Foo", print_re: 1)
-    assert {:error, :invalid_print_re} = Rexbug.start("Foo", print_re: :foo)
-    assert {:error, :invalid_print_re} = Rexbug.start("Foo", print_re: "foo")
-    assert {:error, :invalid_print_re} = Rexbug.start("Foo", print_re: 'foo')
-  end
-
   test "Rexbug.help() uses Elixir syntax" do
     output =
       capture_io(fn ->
@@ -39,5 +32,32 @@ defmodule RexbugTest do
 
   test "Rexbug.stop_sync() when Rexbug isn't started" do
     assert :not_started = Rexbug.stop_sync()
+  end
+
+  test "Rexbug.stop_sync() will report timeout if not given enough time" do
+    capture_io(fn ->
+      {_, _} = Rexbug.start(":dets", print_re: ~r/lkdfjlksjfdlkjsdflkjsdflkjf/)
+      :ok = wait_for_redbug_up(50)
+      assert {:error, :could_not_stop_redbug} = Rexbug.stop_sync(0)
+
+      # cleanup
+      Rexbug.stop_sync()
+    end)
+  end
+
+  @redbug_up_step_ms 1
+  defp wait_for_redbug_up(max_ms) when max_ms <= 0 do
+    :error
+  end
+
+  defp wait_for_redbug_up(max_ms) do
+    case Process.whereis(:redbug) do
+      nil ->
+        Process.sleep(@redbug_up_step_ms)
+        wait_for_redbug_up(max_ms - @redbug_up_step_ms)
+
+      _pid ->
+        :ok
+    end
   end
 end

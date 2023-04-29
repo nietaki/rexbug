@@ -138,6 +138,39 @@ defmodule Rexbug.PrintingTest do
     end
   end
 
+  describe "Printing.print_with_opts/2" do
+    test "filters out non-matching messages" do
+      msg =
+        {:call, {{URI, :parse, ["https://example.com"]}, ""},
+         {:c.pid(0, 150, 0), {IEx.Evaluator, :init, 4}}, {21, 49, 2, 152_927}}
+
+      io =
+        capture_io(fn ->
+          Rexbug.Printing.print_with_opts(msg, print_re: ~r/slkfdjlkdlgfkdlglkdjflksjflkjsldfk/)
+        end)
+
+      assert "" = io
+    end
+
+    test "keeps matching messages" do
+      msg =
+        {:call, {{URI, :parse, ["https://example.com"]}, ""},
+         {:c.pid(0, 150, 0), {IEx.Evaluator, :init, 4}}, {21, 49, 2, 152_927}}
+
+      io_full =
+        capture_io(fn ->
+          Rexbug.Printing.print_with_opts(msg, [])
+        end)
+
+      io_with_regex =
+        capture_io(fn ->
+          Rexbug.Printing.print_with_opts(msg, print_re: ~r/example/)
+        end)
+
+      assert io_full == io_with_regex
+    end
+  end
+
   describe "Printing.extract_stack/1" do
     test "works on an example info binary" do
       dump = File.read!(__DIR__ <> "/../support/dump.txt")

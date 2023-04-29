@@ -72,7 +72,7 @@ defmodule Rexbug do
   print_file   (standard_io) print to this file
   print_msec   (false)       print milliseconds on timestamps
   print_depth  (999_999)     formatting depth for "~P"
-  print_re     ("")          print only messages that match this regex
+  print_re     (~r/./)       print only messages that match this regex
   print_return (true)        print return value (if "return" action given)
   print_fun    ()            custom print handler, fun/1 or fun/2;
                               fun(trace_msg :: term) :: <ignored>
@@ -184,7 +184,7 @@ defmodule Rexbug do
   | print_file   | standard_io | if provided, prints messages to the specified file                                              |
   | print_msec   | `true`      | print milliseconds on timestamps                                                                |
   | print_depth  | `999_999`   | formatting depth for `"~P"`                                                                     |
-  | print_re     | `""`        | print only messages that match this regex                                                       |
+  | print_re     | `~r/./`     | print only messages that match this regex                                                       |
   | print_return | `true`      | if set to `false`, won't print the return values. Relevant only if `return` action is specified |
   | print_fun    | none        | Custom print handler. [see comment](#start/2-print_fun)                                         |
 

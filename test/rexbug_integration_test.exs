@@ -210,7 +210,11 @@ defmodule RexbugIntegrationTest do
       output = capture_output(trigger, "Enum.reverse/1", print_re: ~r/foo/)
       filtered_lines = String.split(output, "\n")
 
+      output = capture_output(trigger, "Enum.reverse/1", print_re: ~r/./)
+      lines_with_always_matching_regex = String.split(output, "\n")
+
       assert Enum.count(unfiltered_lines) > Enum.count(filtered_lines)
+      assert Enum.count(unfiltered_lines) == Enum.count(lines_with_always_matching_regex)
     end
   end
 
