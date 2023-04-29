@@ -20,7 +20,7 @@ intuitive interface while making it more convenient to use by Elixir developers.
 - [x] test matching on map keys
 - [x] test binding to the same variable
 - [x] verify all redbug 2.x options are supported
-- [ ] add unit tests for options (to use in examples as well): print_msec, print_re
+- [x] add unit tests for options (to use in examples as well): print_msec, print_re
 - [x] add and test matching on structs
 - [x] investigate is_struct() guard
 - [x] investigate matching on heads of lists

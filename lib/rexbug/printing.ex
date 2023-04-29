@@ -205,12 +205,21 @@ defmodule Rexbug.Printing do
   @spec print_with_opts(tuple(), Keyword.t()) :: :ok
 
   def print_with_opts(message, opts) do
-    case format(message, opts) do
-      nil ->
+    print_re = Keyword.get(opts, :print_re)
+
+    case {format(message, opts), print_re} do
+      {nil, _} ->
         :ok
 
-      s when is_binary(s) ->
+      {s, nil} when is_binary(s) ->
         IO.puts("\n" <> s)
+
+      {s, %Regex{}} when is_binary(s) ->
+        if Regex.match?(print_re, s) do
+          IO.puts("\n" <> s)
+        else
+          :ok
+        end
     end
   end
 

@@ -16,6 +16,13 @@ defmodule RexbugTest do
     assert {:error, :invalid_options} = Rexbug.start("Foo", [{:foo, :bar, :baz}])
   end
 
+  test "if print_re is passed it needs to be a regex struct" do
+    assert {:error, :invalid_print_re} = Rexbug.start("Foo", print_re: 1)
+    assert {:error, :invalid_print_re} = Rexbug.start("Foo", print_re: :foo)
+    assert {:error, :invalid_print_re} = Rexbug.start("Foo", print_re: "foo")
+    assert {:error, :invalid_print_re} = Rexbug.start("Foo", print_re: 'foo')
+  end
+
   test "Rexbug.help() uses Elixir syntax" do
     output =
       capture_io(fn ->

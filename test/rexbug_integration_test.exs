@@ -183,7 +183,7 @@ defmodule RexbugIntegrationTest do
       match_time = fn input ->
         input
         |> String.split("\n")
-        |> Enum.map(& Regex.run(~r/^# (\d{2}:\d{2}:\d{2})(\.\d{3})?/, &1))
+        |> Enum.map(&Regex.run(~r/^# (\d{2}:\d{2}:\d{2})(\.\d{3})?/, &1))
         |> Enum.filter(&is_list/1)
         |> Enum.at(0)
       end
@@ -201,16 +201,16 @@ defmodule RexbugIntegrationTest do
       assert [_beginning, _time, _msec] = match_time.(output)
     end
 
-    test "print_re performs any filtering at all" do
+    test "print_re performs some filtering" do
       trigger = fn -> Enum.reverse([1, 2]) ++ Enum.reverse([:foo, :bar]) end
 
       output = capture_output(trigger, "Enum.reverse/1")
-      unfiltered_line_count = String.split(output, "\n")
+      unfiltered_lines = String.split(output, "\n")
 
       output = capture_output(trigger, "Enum.reverse/1", print_re: ~r/foo/)
-      filtered_line_count = String.split(output, "\n")
+      filtered_lines = String.split(output, "\n")
 
-      assert unfiltered_line_count > filtered_line_count
+      assert Enum.count(unfiltered_lines) > Enum.count(filtered_lines)
     end
   end
 

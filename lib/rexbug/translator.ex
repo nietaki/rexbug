@@ -176,6 +176,19 @@ defmodule Rexbug.Translator do
     {:ok, {file_option, String.to_charlist(filename)}}
   end
 
+  defp translate_option({:print_re, print_re} = kv) do
+    case print_re do
+      nil ->
+        {:ok, kv}
+
+      %Regex{} ->
+        {:ok, kv}
+
+      _ ->
+        {:error, :invalid_print_re}
+    end
+  end
+
   defp translate_option({k, v}) do
     {:ok, {k, v}}
   end
