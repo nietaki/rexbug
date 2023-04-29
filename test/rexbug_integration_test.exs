@@ -178,12 +178,48 @@ defmodule RexbugIntegrationTest do
     end
   end
 
+  describe "Rexbug.start() options" do
+    test "print_msec is respected" do
+      match_time = fn input ->
+        input
+        |> String.split("\n")
+        |> Enum.map(& Regex.run(~r/^# (\d{2}:\d{2}:\d{2})(\.\d{3})?/, &1))
+        |> Enum.filter(&is_list/1)
+        |> Enum.at(0)
+      end
+
+      trigger = fn -> Enum.reverse([1, 2, 3]) end
+
+      output = capture_output(trigger, "Enum.reverse/1", print_msec: false)
+      assert [_beginning, _time] = match_time.(output)
+
+      output = capture_output(trigger, "Enum.reverse/1", print_msec: true)
+      assert [_beginning, _time, _msec] = match_time.(output)
+
+      # default should be true
+      output = capture_output(trigger, "Enum.reverse/1")
+      assert [_beginning, _time, _msec] = match_time.(output)
+    end
+
+    test "print_re performs any filtering at all" do
+      trigger = fn -> Enum.reverse([1, 2]) ++ Enum.reverse([:foo, :bar]) end
+
+      output = capture_output(trigger, "Enum.reverse/1")
+      unfiltered_line_count = String.split(output, "\n")
+
+      output = capture_output(trigger, "Enum.reverse/1", print_re: ~r/foo/)
+      filtered_line_count = String.split(output, "\n")
+
+      assert unfiltered_line_count > filtered_line_count
+    end
+  end
+
   # ===========================================================================
   # Utility functions
   # ===========================================================================
 
   defp validate(elixir_invocation, options \\ []) do
-    options = [time: 200, procs: [self()]] ++ options
+    options = Keyword.merge([time: 200, procs: [self()]], options)
 
     capture_io(fn ->
       assert {1, y} = res = Rexbug.start(elixir_invocation, options)
@@ -235,6 +271,33 @@ defmodule RexbugIntegrationTest do
     case msg do
       {:meta, _, _, _} -> :ok
       _ -> send(me, {:triggered, msg})
+    end
+  end
+
+  defp capture_output(trigger_fun, spec, options \\ [])
+       when is_function(trigger_fun, 0) and is_binary(spec) do
+    capture_io(fn ->
+      options = Keyword.merge([time: 100, procs: [self()]], options)
+      assert {1, _} = Rexbug.start(spec, options)
+      trigger_fun.()
+      :ok = wait_for_redbug_to_finish(500)
+    end)
+  end
+
+  defp wait_for_redbug_to_finish(timeout_ms) do
+    case Process.whereis(:redbug) do
+      nil ->
+        :ok
+
+      pid ->
+        ref = Process.monitor(pid)
+
+        receive do
+          {:DOWN, ^ref, _, _, _} ->
+            :ok
+        after
+          timeout_ms -> {:error, :timeout}
+        end
     end
   end
 
