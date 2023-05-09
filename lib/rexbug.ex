@@ -296,4 +296,10 @@ defmodule Rexbug do
 
     Keyword.merge(default_options, opts)
   end
+
+  @doc Module.get_attribute(Rexbug.Dtop, :toggle_doc, "")
+  @spec dtop(Keyword.t() | %{}) :: term()
+  def dtop(opts \\ []) do
+    Rexbug.Dtop.toggle(opts)
+  end
 end
