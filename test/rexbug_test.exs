@@ -45,6 +45,46 @@ defmodule RexbugTest do
     end)
   end
 
+  describe "Rexbug.dtop()" do
+    test "when called with invalid args prints the help message" do
+      output =
+        capture_io(fn ->
+          Rexbug.dtop(:foo)
+        end)
+
+      assert String.contains?(output, "Supported")
+
+      o2 =
+        capture_io(fn ->
+          Rexbug.dtop([1, 2, 3])
+        end)
+
+      assert output == o2
+    end
+
+    @tag :integration
+    @tag :coveralls_safe
+    test "prints node info" do
+      output =
+        capture_io(fn ->
+          Rexbug.dtop()
+          Process.sleep(3000)
+          pid = Process.whereis(:redbug_dtop)
+          ref = Process.monitor(pid)
+          Rexbug.dtop(%{})
+
+          receive do
+            {:DOWN, ^ref, _, _, _} ->
+              :stopped
+          after
+            100 -> flunk("could not stop dtop")
+          end
+        end)
+
+      assert String.contains?(output, "cpu%:")
+    end
+  end
+
   @redbug_up_step_ms 1
   defp wait_for_redbug_up(max_ms) when max_ms <= 0 do
     :error

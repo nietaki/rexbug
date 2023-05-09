@@ -132,7 +132,7 @@ defmodule Rexbug.Dtop do
   end
 
   defp print_help() do
-    IO.puts(@help_message)
+    IO.puts(toggle_doc())
     {:error, :invalid_invocation}
   end
 end

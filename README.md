@@ -24,10 +24,10 @@ intuitive interface while making it more convenient to use by Elixir developers.
 - [x] add and test matching on structs
 - [x] investigate is_struct() guard
 - [x] investigate matching on heads of lists
-- [ ] add :redbug.dtop()
+- [x] add :redbug.dtop()
 - [ ] investigate matching on records
 - [ ] verify the list of working guards is up to date
-- [ ] fix all TODOs, make sure style checks are passing
+- [x] fix all TODOs, make sure style checks are passing
 - [ ] update readme with examples from the new tests
 - [ ] update Rexbug.help
 - [ ] establish the range of Elixir/OTP version where rexbug 2.0 can be used
