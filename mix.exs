@@ -64,7 +64,11 @@ defmodule Rexbug.Mixfile do
       source_url: "https://github.com/nietaki/rexbug",
       extras: ["README.md"],
       assets: ["assets"],
-      logo: "assets/rexbug64.png"
+      logo: "assets/rexbug64.png",
+      groups_for_modules: [
+        "Main Modules": [Rexbug, Rexbug.Dtop],
+        "Support Modules": ~r/.*/
+      ]
     ]
   end
 
