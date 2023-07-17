@@ -74,8 +74,12 @@ defmodule Rexbug.Dtop do
   | `mem` | `18.9k` | The memory size of the process. This includes call stack, heap, and internal structures |
   | `cpu` | `7` | Estimated percentage CPU time used by the process. The `cpu` values for all PIDs would sum up to the `cpu%` (CPU time used) from the header. |
   """
-  @compile {:inline, toggle_doc: 0}
+  @compile {:inline, dtop_doc: 0}
 
+  @dtop_proc_name :redbug_dtop
+
+  @sort_options [:msgs, :cpu, :mem]
+  # @dtop_options [:sort, :max_procs]
   @type sort_type() :: :msgs | :cpu | :mem
   @type opt() :: {:sort, sort_type()} | {:max_procs, integer()}
 
@@ -87,7 +91,7 @@ defmodule Rexbug.Dtop do
 
   Example invocation:
 
-      Rexbug.dtop([sort: :mem])
+      Rexbug.dtop(sort: :mem)
 
   ## Supported options
 
@@ -102,37 +106,166 @@ defmodule Rexbug.Dtop do
   not print any process info, just the header. This is to avoid oveloading the VM.
 
   `max_procs` defaults to `1_500`.
+
+  **NOTE** Running `Rexbug.dtop/1` while dtop is running will re-configure it
+  according to the provided options. Run `Rexbug.dtop/0` to stop it.
   """
 
-  @toggle_doc @help_message
+  @dtop_doc @help_message
 
   @doc false
-  def toggle_doc(), do: @toggle_doc
+  def dtop_doc(), do: @dtop_doc
 
-  @doc @toggle_doc
-  @spec toggle([opt()] | %{}) :: term()
-  def toggle(opts \\ [])
+  @doc @dtop_doc
+  @spec dtop() :: :ok | {:error, term()}
+  @spec dtop([opt()] | %{}) :: {:ok, :started | :reconfigured | :stopped} | {:error, term()}
+  def dtop(opts \\ []) do
+    # credo:disable-for-next-line Credo.Check.Readability.WithSingleClause
+    with {:ok, config} <- validate_config(opts) do
+      case {running?(), Enum.empty?(config)} do
+        {false, _} ->
+          start(config)
 
-  def toggle(map) when is_map(map) do
-    do_dtop(map)
-  end
+        {true, false} ->
+          configure(config)
 
-  def toggle(list) when is_list(list) do
-    if Keyword.keyword?(list) do
-      do_dtop(Map.new(list))
+        {true, true} ->
+          do_stop()
+      end
     else
-      print_help()
+      err ->
+        print_help()
+        err
     end
   end
 
-  def toggle(_), do: print_help()
+  @doc """
+  Starts dtop.
 
-  defp do_dtop(map) when is_map(map) do
-    :redbug.dtop(map)
+  Accepts the same options as `Rexbug.Dtop.dtop/1` - see the function and
+  `Rexbug.Dtop` module docs for details
+  """
+  @spec start() :: :ok | {:error, term()}
+  @spec start([opt()] | %{}) :: :ok | {:error, term()}
+  def start(opts \\ []) do
+    with {:ok, config} <- validate_config(opts) do
+      if running?() do
+        {:error, :dtop_already_running}
+      else
+        :redbug_dtop.start()
+        wait_for_dtop_proc()
+        do_configure(config)
+        {:ok, :started}
+      end
+    end
   end
 
+  @doc """
+  Stops dtop.
+  """
+  @spec stop() :: {:ok, :stopped} | {:error, term()}
+  def stop() do
+    if running?() do
+      do_stop()
+    else
+      {:error, :dtop_not_running}
+    end
+  end
+
+  defp do_stop() do
+    pid = Process.whereis(@dtop_proc_name)
+    true = is_pid(pid)
+    ref = Process.monitor(pid)
+    :redbug_dtop.stop()
+
+    receive do
+      {:DOWN, ^ref, _, _, _} ->
+        {:ok, :stopped}
+    after
+      100 -> {:error, :could_not_stop_redbug_dtop}
+    end
+  end
+
+  @doc """
+  Configures dtop if it's already running.
+
+  Accepts the same options as `Rexbug.Dtop.dtop/1` - see the function and
+  `Rexbug.Dtop` module docs for details
+  """
+  @spec configure([opt()] | %{}) :: :ok | {:error, term()}
+  def configure(opts) do
+    with {:ok, config} <- validate_config(opts) do
+      if running?() do
+        do_configure(config)
+        {:ok, :reconfigured}
+      else
+        {:error, :dtop_not_running}
+      end
+    end
+  end
+
+  defp do_configure(config) when is_map(config) do
+    Enum.each(config, fn {k, v} -> set_setting(k, v) end)
+  end
+
+  defp set_setting(:sort, value), do: :redbug_dtop.sort(value)
+  defp set_setting(:max_procs, value), do: :redbug_dtop.max_prcs(value)
+  defp set_setting(_, _), do: :ok
+
+  @spec validate_config(Keyword.t() | map()) :: {:ok, map()} | {:error, term()}
+  defp validate_config(opts) do
+    with {:ok, config} <- do_standardise_config(opts),
+         validations = Enum.map(config, &do_validate_setting/1),
+         {:ok, _} <- Rexbug.Utils.collapse_errors(validations) do
+      {:ok, config}
+    end
+  end
+
+  defp do_standardise_config(opts) do
+    case opts do
+      list when is_list(list) ->
+        if Keyword.keyword?(list) do
+          {:ok, Map.new(list)}
+        else
+          {:error, :invalid_keyword_list}
+        end
+
+      map when is_map(map) ->
+        {:ok, map}
+
+      _ ->
+        {:error, :invalid_config}
+    end
+  end
+
+  defp do_validate_setting({:sort, sort}) when sort in @sort_options, do: {:ok, :ok}
+  defp do_validate_setting({:sort, _}), do: {:error, :invalid_sort_type}
+  defp do_validate_setting({:max_procs, i}) when is_integer(i) and i > 0, do: {:ok, :ok}
+  defp do_validate_setting({:max_procs, _}), do: {:error, :invalid_max_procs}
+  defp do_validate_setting({k, _v}), do: {:error, {:unrecognised_option, k}}
+
   defp print_help() do
-    IO.puts(toggle_doc())
+    IO.puts(dtop_doc())
     {:error, :invalid_invocation}
+  end
+
+  @doc false
+  def running?() do
+    Process.whereis(@dtop_proc_name) != nil
+  end
+
+  defp wait_for_dtop_proc(attempts_left \\ 50)
+
+  defp wait_for_dtop_proc(no_attempts_left) when no_attempts_left <= 0, do: :error
+
+  defp wait_for_dtop_proc(attempts_left) do
+    case Process.whereis(@dtop_proc_name) do
+      pid when is_pid(pid) ->
+        pid
+
+      _ ->
+        Process.sleep(1)
+        wait_for_dtop_proc(attempts_left - 1)
+    end
   end
 end

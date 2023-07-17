@@ -31,6 +31,8 @@ defmodule Rexbug.Mixfile do
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
+        coverage: :test,
+        "coverage.html": :test,
         "coveralls.html": :test,
         "coveralls.post": :test,
         "coveralls.detail": :test,
@@ -55,7 +57,11 @@ defmodule Rexbug.Mixfile do
   defp elixirc_paths(_), do: ["lib"]
 
   defp aliases do
-    []
+    [
+      "coverage.html": ["coveralls.html --exclude integration --include coveralls_safe"],
+      coverage: ["coveralls --exclude integration --include coveralls_safe"],
+      "rexbug.check": ["format", "dialyzer", "credo", "docs"]
+    ]
   end
 
   defp docs do

@@ -1,4 +1,6 @@
 defmodule Rexbug.Translator do
+  import Rexbug.Utils
+
   @moduledoc """
   Utility module for translating Elixir syntax to the one expected by
   `:redbug`.
@@ -194,21 +196,6 @@ defmodule Rexbug.Translator do
   end
 
   defp translate_option(_), do: {:error, :invalid_options}
-
-  @spec collapse_errors([{:ok, term} | {:error, term}]) :: {:ok, [term]} | {:error, term}
-  defp collapse_errors(tuples) do
-    # we could probably play around with some monads for this
-    first_error = Enum.find(tuples, :no_error_to_collapse, fn res -> !match?({:ok, _}, res) end)
-
-    case first_error do
-      :no_error_to_collapse ->
-        results = Enum.map(tuples, fn {:ok, res} -> res end)
-        {:ok, results}
-
-      err ->
-        err
-    end
-  end
 
   defp split_quoted_into_mfa_and_guards({:when, _line, [mfa, guards]}) do
     {:ok, {mfa, guards}}
