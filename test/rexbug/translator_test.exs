@@ -211,6 +211,52 @@ defmodule Rexbug.TranslatorTest do
     end
   end
 
+  @elixir_guards [
+    "abs/1",
+    # "and/2",
+    "binary_part/3",
+    "bit_size/1",
+    "byte_size/1",
+    "ceil/1",
+    "div/2",
+    # "elem/2",
+    "floor/1",
+    "hd/1",
+    # "in/2",
+    "is_atom/1",
+    "is_binary/1",
+    "is_bitstring/1",
+    "is_boolean/1",
+    # "is_exception/1",
+    # "is_exception/2",
+    "is_float/1",
+    "is_function/1",
+    "is_function/2",
+    "is_integer/1",
+    "is_list/1",
+    "is_map/1",
+    "is_map_key/2",
+    # "is_nil/1",
+    "is_number/1",
+    "is_pid/1",
+    "is_port/1",
+    "is_reference/1",
+    # "is_struct/1",
+    # "is_struct/2",
+    "is_tuple/1",
+    "length/1",
+    "map_size/1",
+    "node/0",
+    "node/1",
+    "not/1",
+    "rem/2",
+    "round/1",
+    "self/0",
+    "tl/1",
+    "trunc/1",
+    "tuple_size/1"
+  ]
+
   describe "Translator.translate/1 translating guards" do
     test "a simple is_integer()" do
       res = translate(":erlang.term_to_binary(x) when is_integer(x)")
@@ -270,19 +316,35 @@ defmodule Rexbug.TranslatorTest do
 
     test "operator precedence" do
       assert_guards(
-        '((is_nil(X) andalso is_nil(Y)) orelse is_nil(Z))',
-        "is_nil(x) and is_nil(y) or is_nil(z)"
+        '((is_pid(X) andalso is_pid(Y)) orelse is_pid(Z))',
+        "is_pid(x) and is_pid(y) or is_pid(z)"
       )
 
       assert_guards(
-        '(is_nil(X) orelse (is_nil(Y) andalso is_nil(Z)))',
-        "is_nil(x) or is_nil(y) and is_nil(z)"
+        '(is_pid(X) orelse (is_pid(Y) andalso is_pid(Z)))',
+        "is_pid(x) or is_pid(y) and is_pid(z)"
       )
     end
 
     test "nil translation" do
       assert_guards('X /= nil', "x != nil")
-      assert_guards('not is_nil(X)', "not is_nil(x)")
+      assert_guards('not is_pid(X)', "not is_pid(x)")
+    end
+
+    test "all valid elixir guards" do
+      erl_ends = %{0 => '()', 1 => '(X)', 2 => '(X, Y)', 3 => '(X, Y, Z)'}
+      elx_ends = %{0 => "()", 1 => "(x)", 2 => "(x, y)", 3 => "(x, y, z)"}
+
+      @elixir_guards
+      |> Enum.each(fn str ->
+        [name, arity] = String.split(str, "/")
+        arity = String.to_integer(arity)
+        erl = String.to_charlist(name) ++ erl_ends[arity] ++ ' == true'
+        elx = name <> elx_ends[arity] <> " == true"
+
+        assert function_exported?(:erlang, String.to_atom(name), arity)
+        assert_guards(erl, elx)
+      end)
     end
   end
 
