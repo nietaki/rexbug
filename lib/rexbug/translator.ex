@@ -63,6 +63,8 @@ defmodule Rexbug.Translator do
     :>= => :>=,
     :< => :<,
     :<= => :"=<"
+    # special
+    # :in => :in
   }
 
   @valid_infix_guards Map.keys(@infix_guards_mapping)

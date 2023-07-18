@@ -334,6 +334,11 @@ defmodule Rexbug.TranslatorTest do
       assert_guards('element(1, X)', "elem(x, 0)")
     end
 
+    @tag :skip
+    test "in special case" do
+      assert_guards('X in [1, 2, 3]', "x in [1, 2, 3]")
+    end
+
     test "nil translation" do
       assert_guards('X /= nil', "x != nil")
       assert_guards('not is_pid(X)', "not is_pid(x)")

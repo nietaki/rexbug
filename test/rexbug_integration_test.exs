@@ -139,6 +139,28 @@ defmodule RexbugIntegrationTest do
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_, :four])")
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, ls) when tl(ls) == [:four]")
     end
+
+    test "is_nil" do
+      trigger = fn -> Foo.Bar.xyz(Foo.Bar, "b", nil) end
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when is_nil(x)")
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when is_nil(y)")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, y, z) when is_nil(z)")
+    end
+
+    test "elem" do
+      trigger = fn -> Foo.Bar.xyz(Foo.Bar, "b", {:a, :b, :c}) end
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when elem(z, 0) == :c")
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when elem(z, 1) == :c")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, y, z) when elem(z, 2) == :c")
+    end
+
+    @tag :skip
+    test "in" do
+      trigger = fn -> Foo.Bar.xyz(Foo.Bar, "b", 5) end
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when z in [1, 2, 3]")
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when z in [1, 2, 3, 4]")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, y, z) when z in [4, 5, 6]")
+    end
   end
 
   describe "pattern matching structs" do
