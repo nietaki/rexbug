@@ -326,6 +326,14 @@ defmodule Rexbug.TranslatorTest do
       )
     end
 
+    test "is_nil special case" do
+      assert_guards('X == nil', "is_nil(x)")
+    end
+
+    test "elem special case" do
+      assert_guards('element(1, X)', "elem(x, 0)")
+    end
+
     test "nil translation" do
       assert_guards('X /= nil', "x != nil")
       assert_guards('not is_pid(X)', "not is_pid(x)")

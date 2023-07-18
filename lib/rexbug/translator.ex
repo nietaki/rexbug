@@ -27,8 +27,7 @@ defmodule Rexbug.Translator do
     :is_list,
     :is_map,
     :is_map_key,
-    # TODO translate to comparison to nil
-    # :is_nil,
+    :is_nil,
     :is_number,
     :is_pid,
     :is_port,
@@ -45,11 +44,16 @@ defmodule Rexbug.Translator do
     :trunc,
     :tuple_size,
 
-    # erlang guard
-    :size
+    # erlang guards
+    :size,
+    :element
   ]
 
   @infix_guards_mapping %{
+    # # arithmetic operators, currently not supported
+    # :+ => :+,
+    # :- => :-,
+    # :* => :*,
     # comparison
     :== => :==,
     :!= => :"/=",
@@ -479,6 +483,14 @@ defmodule Rexbug.Translator do
   defp _translate_guards(els), do: translate_guard(els)
 
   @spec translate_guard(term) :: {:ok, String.t()} | {:error, term}
+  defp translate_guard({:is_nil, line, [arg]}) do
+    translate_guard({:==, line, [arg, nil]})
+  end
+
+  defp translate_guard({:elem, line, [tuple, idx]}) when is_integer(idx) do
+    translate_guard({:element, line, [idx + 1, tuple]})
+  end
+
   defp translate_guard({guard_fun, _line, args})
        when guard_fun in @valid_guard_functions do
     with translated_fun = Atom.to_string(guard_fun),
