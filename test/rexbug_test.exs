@@ -83,6 +83,16 @@ defmodule RexbugTest do
 
       assert String.contains?(output, "cpu%:")
     end
+
+    test "Rexbug.dtop_help() prints dtop help" do
+      output =
+        capture_io(fn ->
+          assert :ok = Rexbug.dtop_help()
+        end)
+
+      assert String.contains?(output, ":mem")
+      assert String.contains?(output, "Rexbug.dtop(")
+    end
   end
 
   @redbug_up_step_ms 1

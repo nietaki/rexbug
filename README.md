@@ -29,7 +29,7 @@ intuitive interface while making it more convenient to use by Elixir developers.
 - [x] verify the list of working guards is up to date
 - [x] fix all TODOs, make sure style checks are passing
 - [ ] update readme with examples from the new tests
-- [ ] update Rexbug.help
+- [x] update Rexbug.help
 - [ ] establish the range of Elixir/OTP version where rexbug 2.0 can be used
 
 # README

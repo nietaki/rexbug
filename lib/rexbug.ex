@@ -82,6 +82,10 @@ defmodule Rexbug do
   file         (none)        use a trc file based on this name
   file_size    (1)           size of each trc file
   file_count   (8)           number of trc files
+
+  ---
+
+  For Rexbug.dtop() help run Rexbug.dtop_help()
   """
 
   alias Rexbug.Translator
@@ -238,6 +242,16 @@ defmodule Rexbug do
     end
   end
 
+  defp add_default_options(opts) do
+    print_fun = fn t -> Rexbug.Printing.print_with_opts(t, opts) end
+
+    default_options = [
+      print_fun: print_fun
+    ]
+
+    Keyword.merge(default_options, opts)
+  end
+
   @spec stop() :: :stopped | :not_started
   @doc """
   Stops all tracing.
@@ -287,14 +301,10 @@ defmodule Rexbug do
     :ok
   end
 
-  defp add_default_options(opts) do
-    print_fun = fn t -> Rexbug.Printing.print_with_opts(t, opts) end
-
-    default_options = [
-      print_fun: print_fun
-    ]
-
-    Keyword.merge(default_options, opts)
+  @spec dtop_help() :: :ok
+  def dtop_help() do
+    IO.puts(Rexbug.Dtop.dtop_doc())
+    :ok
   end
 
   @doc Rexbug.Dtop.dtop_doc()
