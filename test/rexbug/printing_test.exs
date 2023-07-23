@@ -45,7 +45,7 @@ defmodule Rexbug.PrintingTest do
         {21, 49, 2, 152_927}
       }
 
-      assert "# 21:49:02 #PID<0.150.0> IEx.Evaluator.init/4\n# URI.parse(\"https://example.com\")" ==
+      assert "# 21:49:02.152 #PID<0.150.0> IEx.Evaluator.init/4\n# URI.parse(\"https://example.com\")" ==
                Printing.format(msg)
     end
 
@@ -63,7 +63,7 @@ defmodule Rexbug.PrintingTest do
         {21, 53, 7, 178_179}
       }
 
-      assert "# 21:53:07 #PID<0.194.0> (:dead)\n# :erlang.binary_to_term/1 -> {:foo, \"bar\", 1}" ==
+      assert "# 21:53:07.178 #PID<0.194.0> (:dead)\n# :erlang.binary_to_term/1 -> {:foo, \"bar\", 1}" ==
                Printing.format(msg)
     end
 
@@ -84,7 +84,7 @@ defmodule Rexbug.PrintingTest do
         {1, 39, 54, 116_410}
       }
 
-      assert "# 01:39:54 #PID<0.396.0> (:dead)\n# #PID<0.178.0> IEx.Evaluator.init/4 <<< {1, :foo}" ==
+      assert "# 01:39:54.116 #PID<0.396.0> (:dead)\n# #PID<0.178.0> IEx.Evaluator.init/4 <<< {1, :foo}" ==
                Printing.format(msg)
     end
 
@@ -92,7 +92,7 @@ defmodule Rexbug.PrintingTest do
       msg =
         {:recv, {1, :foo}, {:c.pid(0, 182, 0), {IEx.Evaluator, :init, 4}}, {22, 20, 4, 760_169}}
 
-      assert "# 22:20:04 #PID<0.182.0> IEx.Evaluator.init/4\n# <<< {1, :foo}" ==
+      assert "# 22:20:04.760 #PID<0.182.0> IEx.Evaluator.init/4\n# <<< {1, :foo}" ==
                Printing.format(msg)
     end
 
@@ -100,9 +100,9 @@ defmodule Rexbug.PrintingTest do
       msg =
         {:recv, {1, :foo}, {:c.pid(0, 182, 0), {IEx.Evaluator, :init, 4}}, {22, 20, 4, 760_169}}
 
-      assert "# 22:20:04 #PID" <> _rest = Printing.format(msg)
       assert "# 22:20:04 #PID" <> _rest = Printing.format(msg, print_msec: false)
       assert "# 22:20:04.760 #PID" <> _rest = Printing.format(msg, print_msec: true)
+      assert "# 22:20:04.760 #PID" <> _rest = Printing.format(msg)
     end
 
     test "can print with print_msec option set to true with correct number formatting" do
@@ -124,6 +124,50 @@ defmodule Rexbug.PrintingTest do
         end)
 
       assert String.contains?(io, "#PID<")
+    end
+
+    test "ignores meta messages" do
+      msg = {:meta, :stop, :dummy, {0, 0, 0, 0}}
+
+      io =
+        capture_io(fn ->
+          Rexbug.Printing.print(msg)
+        end)
+
+      assert String.length(io) == 0
+    end
+  end
+
+  describe "Printing.print_with_opts/2" do
+    test "filters out non-matching messages" do
+      msg =
+        {:call, {{URI, :parse, ["https://example.com"]}, ""},
+         {:c.pid(0, 150, 0), {IEx.Evaluator, :init, 4}}, {21, 49, 2, 152_927}}
+
+      io =
+        capture_io(fn ->
+          Rexbug.Printing.print_with_opts(msg, print_re: ~r/slkfdjlkdlgfkdlglkdjflksjflkjsldfk/)
+        end)
+
+      assert "" = io
+    end
+
+    test "keeps matching messages" do
+      msg =
+        {:call, {{URI, :parse, ["https://example.com"]}, ""},
+         {:c.pid(0, 150, 0), {IEx.Evaluator, :init, 4}}, {21, 49, 2, 152_927}}
+
+      io_full =
+        capture_io(fn ->
+          Rexbug.Printing.print_with_opts(msg, [])
+        end)
+
+      io_with_regex =
+        capture_io(fn ->
+          Rexbug.Printing.print_with_opts(msg, print_re: ~r/example/)
+        end)
+
+      assert io_full == io_with_regex
     end
   end
 

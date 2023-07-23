@@ -1,16 +1,16 @@
 ![rexbug logo](assets/logo_horizontal_h150px.png)
 
-**Note: Development has been moved to the [v2 branch](https://github.com/nietaki/rexbug/tree/v2)**
+![Hex.pm](https://img.shields.io/hexpm/v/rexbug)
+[![Hex.pm](https://img.shields.io/hexpm/dt/rexbug)](https://hex.pm/packages/rexbug)
+![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/nietaki/rexbug/test.yml?label=tests)
+![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/nietaki/rexbug/style_check.yml?label=style%20check)
+[![Coverage Status](https://coveralls.io/repos/github/nietaki/rexbug/badge.svg)](https://coveralls.io/github/nietaki/rexbug)
+[![docs](https://img.shields.io/badge/docs-hexdocs-yellow.svg)](https://hexdocs.pm/rexbug/)
 
 `Rexbug` is a thin Elixir wrapper for [`:redbug`](https://hex.pm/packages/redbug)
 production-friendly Erlang tracing debugger.
 It tries to preserve [`:redbug`](https://hex.pm/packages/redbug)'s simple and
 intuitive interface while making it more convenient to use by Elixir developers.
-
-[![travis badge](https://travis-ci.org/nietaki/rexbug.svg?branch=master)](https://travis-ci.org/nietaki/rexbug)
-[![Coverage Status](https://coveralls.io/repos/github/nietaki/rexbug/badge.svg?branch=master)](https://coveralls.io/github/nietaki/rexbug?branch=master)
-[![Hex.pm](https://img.shields.io/hexpm/v/rexbug.svg)](https://hex.pm/packages/rexbug)
-[![docs](https://img.shields.io/badge/docs-hexdocs-yellow.svg)](https://hexdocs.pm/rexbug/)
 
 # README
 
@@ -30,6 +30,11 @@ Rexbug is also production-system-friendly. It has sensible limits for both time
 and amount of trace events after which it stops tracing. This means you won't
 accidentally overload the system and flood your console with debug information
 if your trace pattern wasn't specific enough.
+
+It also provides `Rexbug.dtop/1` - 
+a tool with much of the functionality of
+[observer](https://www.erlang.org/doc/man/observer.html),
+with an interface similar to and Linux's [htop](https://en.wikipedia.org/wiki/Htop)
 
 ## How does it work?
 
@@ -58,7 +63,7 @@ in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:rexbug, ">= 1.0.0"}]
+  [{:rexbug, ">= 2.0.0-rc1"}]
 end
 ```
 
@@ -72,7 +77,7 @@ can start debugging it at your convenience.
 The general syntax is `Rexbug.start("ModuleName.function_name/_")`.
 The `/_` tells Rexbug we're interested in any arity of the function.
 
-```Elixir
+```elixir
 iex(3)> Rexbug.start("Map.get/_ :: return") # asking for the return value too
 {105, 2}
 iex(4)> Map.get(%{}, :foo)
@@ -94,7 +99,7 @@ redbug done, timeout - 2
 
 ### Tracing a whole module
 
-```Elixir
+```elixir
 iex> Rexbug.start("Map")
 {82, 41}
 iex> m = Map.put(%{}, :foo, :bar) # this could have been called in any process
@@ -121,7 +126,7 @@ iex>
 
 ### Tracing with matching function arguments
 
-```Elixir
+```elixir
 iex> Rexbug.start("Enum.member?([_, _, _], \"foo\")")
 {82, 1}
 iex> Enum.member?([1, 2], "foo") # first argument doesn't match
@@ -141,7 +146,7 @@ iex>
 
 ### Tracing messages sent and received from a process
 
-```Elixir
+```elixir
 iex> s = self()
 #PID<0.193.0>
 iex> proc = Process.spawn(fn ->
@@ -165,6 +170,69 @@ iex> flush()
 redbug done, timeout - 2
 ```
 
+### Running dtop
+
+```elixir
+iex(0)> Rexbug.dtop() # start dtop
+{:ok, :started}
+-------------------------------------------------------------------------------
+nonode@nohost    size: 41.6M(420.4G), cpu%: 2(0), procs: 378, runq: 0, 12:27:41
+memory:      proc    8.4M, atom  737.5k, bin    2.2M, code   15.9M, ets    1.7M
+
+pid            name                         current             msgq    mem cpu
+<0.685.0>      redbug_dtop                  redbug_dtop:prc_i      0 431.8k   2
+<0.66.0>       group:server/3               group:more_data/6      0 176.4k   0
+<0.64.0>       user_drv                     user_drv:server_l      0  26.5k   0
+<0.10.0>       erl_prim_loader              erl_prim_loader:l      0 142.9k   0
+<0.50.0>       code_server                  code_server:loop/      0 284.7k   0
+<0.456.0>      inet_gethost_native          inet_gethost_nati      0  18.8k   0
+<0.437.0>      Elixir.DBConnection.Connecti gen_server:loop/7      0  26.8k   0
+<0.440.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.448.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.447.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.446.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.445.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.444.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.443.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.442.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.441.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.439.0>      Elixir.DBConnection.Connecti erlang:hibernate/      0   3.3k   0
+<0.538.0>      cowboy_clock                 gen_server:loop/7      0  10.9k   0
+<0.550.0>      telemetry_poller:init/1      gen_server:loop/7      0   3.0k   0
+
+iex(3)> Rexbug.dtop(sort: :mem) # sort by memory
+{:ok, :reconfigured}
+-------------------------------------------------------------------------------
+nonode@nohost    size: 43.4M(420.4G), cpu%: 1(0), procs: 378, runq: 0, 12:27:47
+memory:      proc   10.1M, atom  737.5k, bin    2.6M, code   15.9M, ets    1.7M
+
+pid            name                         current             msgq    mem cpu
+<0.685.0>      redbug_dtop                  redbug_dtop:prc_i      0   1.8M   1
+<0.44.0>       application_controller       gen_server:loop/7      0 691.1k   0
+<0.521.0>      telemetry_poller_default     gen_server:loop/7      0 407.4k   0
+<0.168.0>      'Elixir.Hex.State'           gen_server:loop/7      0 372.3k   0
+<0.50.0>       code_server                  code_server:loop/      0 284.7k   0
+<0.473.0>      Elixir.Postgrex.TypeServer:i gen_server:loop/7      0 264.4k   0
+<0.66.0>       group:server/3               group:more_data/6      0 197.3k   0
+<0.497.0>      Elixir.FileSystem.Backends.F gen_server:loop/7      0 176.3k   0
+<0.10.0>       erl_prim_loader              erl_prim_loader:l      0 142.9k   0
+<0.496.0>      phoenix_live_reload_file_mon gen_server:loop/7      0 142.8k   0
+<0.82.0>       disk_log                     disk_log:loop/1        0 109.7k   0
+<0.165.0>      'Elixir.Hex.Supervisor'      gen_server:loop/7      0  88.8k   0
+<0.2.0>        erts_literal_area_collector: erts_literal_area      0  77.7k   0
+<0.0.0>        init                         init:loop/1            0  42.3k   0
+<0.1.0>        erts_code_purger             erts_code_purger:      0  35.5k   0
+<0.682.0>      Elixir.IEx.Evaluator:init/4  Elixir.IEx.Evalua      0  34.4k   0
+<0.578.0>      supervisor:ranch_acceptors_s erlang:hibernate/      0  30.7k   0
+<0.64.0>       user_drv                     user_drv:server_l      0  26.8k   0
+<0.456.0>      inet_gethost_native          inet_gethost_nati      0  26.7k   0
+
+iex(4)> Rexbug.dtop() # stop dtop
+{:ok, :stopped}
+```
+
+For more info and advanced usage see `Rexbug.Dtop` module docs.
+
 ## Motivation
 
 I was discussing investigating some unexpected behaviour in an Elixir project with
@@ -182,7 +250,7 @@ more streamlined...
 If you want to move between `:redbug` and `Rexbug` or you're just curious how
 they compare, here's some examples:
 
-```Elixir
+```elixir
 # tracing an Erlang module
 Rexbug.start(":ets")
 :redbug.start('ets')
@@ -209,7 +277,15 @@ Rexbug.start("Map.new/_ :: return;stack")
 
 ## FAQ
 
-<!-- ### How do I use it with my mix project? -->
+### Which versions of Elixir and Erlang/OTP does Rexbug support?
+
+- Elixir 1.11.4 and newer 
+- Erlang/OTP 24 and newer 
+
+**If you're targeting an older system, try Rexbug 1.x, which handles Elixir 1.4 and newer**
+
+Make sure to check the [general Erlang/Elixir compatibility table](https://hexdocs.pm/elixir/1.15.4/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp)
+
 
 ### My app is already running and it doesn't have Rexbug in its dependencies. Can I still debug it?
 

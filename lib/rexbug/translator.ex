@@ -1,4 +1,6 @@
 defmodule Rexbug.Translator do
+  import Rexbug.Utils
+
   @moduledoc """
   Utility module for translating Elixir syntax to the one expected by
   `:redbug`.
@@ -7,6 +9,14 @@ defmodule Rexbug.Translator do
   """
 
   @valid_guard_functions [
+    :abs,
+    :bit_size,
+    :binary_part,
+    :byte_size,
+    :ceil,
+    :div,
+    :floor,
+    :hd,
     :is_atom,
     :is_binary,
     :is_bitstring,
@@ -16,28 +26,34 @@ defmodule Rexbug.Translator do
     :is_integer,
     :is_list,
     :is_map,
+    :is_map_key,
     :is_nil,
     :is_number,
     :is_pid,
     :is_port,
     :is_reference,
     :is_tuple,
-    :abs,
-    :bit_size,
-    :byte_size,
-    :hd,
     :length,
     :map_size,
+    :node,
+    :not,
+    :rem,
     :round,
+    :self,
     :tl,
     :trunc,
     :tuple_size,
 
-    # erlang guard
-    :size
+    # erlang guards
+    :size,
+    :element
   ]
 
   @infix_guards_mapping %{
+    # # arithmetic operators, currently not supported
+    # :+ => :+,
+    # :- => :-,
+    # :* => :*,
     # comparison
     :== => :==,
     :!= => :"/=",
@@ -47,6 +63,8 @@ defmodule Rexbug.Translator do
     :>= => :>=,
     :< => :<,
     :<= => :"=<"
+    # special
+    # :in => :in
   }
 
   @valid_infix_guards Map.keys(@infix_guards_mapping)
@@ -117,9 +135,7 @@ defmodule Rexbug.Translator do
 
           nil ->
             # args present, no arity
-            "#{translated_module}#{translated_function}#{translated_args}#{translated_guards}#{
-              translated_actions
-            }"
+            "#{translated_module}#{translated_function}#{translated_args}#{translated_guards}#{translated_actions}"
         end
 
       {:ok, String.to_charlist(translated)}
@@ -178,26 +194,24 @@ defmodule Rexbug.Translator do
     {:ok, {file_option, String.to_charlist(filename)}}
   end
 
+  defp translate_option({:print_re, print_re} = kv) do
+    case print_re do
+      nil ->
+        {:ok, kv}
+
+      %Regex{} ->
+        {:ok, kv}
+
+      _ ->
+        {:error, :invalid_print_re}
+    end
+  end
+
   defp translate_option({k, v}) do
     {:ok, {k, v}}
   end
 
   defp translate_option(_), do: {:error, :invalid_options}
-
-  @spec collapse_errors([{:ok, term} | {:error, term}]) :: {:ok, [term]} | {:error, term}
-  defp collapse_errors(tuples) do
-    # we could probably play around with some monads for this
-    first_error = Enum.find(tuples, :no_error_to_collapse, fn res -> !match?({:ok, _}, res) end)
-
-    case first_error do
-      :no_error_to_collapse ->
-        results = Enum.map(tuples, fn {:ok, res} -> res end)
-        {:ok, results}
-
-      err ->
-        err
-    end
-  end
 
   defp split_quoted_into_mfa_and_guards({:when, _line, [mfa, guards]}) do
     {:ok, {mfa, guards}}
@@ -228,13 +242,13 @@ defmodule Rexbug.Translator do
 
   defp validate_mfaa(nil, _, _, _), do: {:error, :missing_module}
 
-  defp validate_mfaa(_, nil, args, _) when not (args in [nil, []]),
+  defp validate_mfaa(_, nil, args, _) when args not in [nil, []],
     do: {:error, :missing_function}
 
   defp validate_mfaa(_, nil, _, arity) when arity != nil, do: {:error, :missing_function}
 
   defp validate_mfaa(_, _, args, arity)
-       when not (args in [nil, []]) and arity != nil do
+       when args not in [nil, []] and arity != nil do
     {:error, :both_args_and_arity_provided}
   end
 
@@ -243,8 +257,7 @@ defmodule Rexbug.Translator do
   defp translate_module({:__aliases__, _line, elixir_module}) when is_list(elixir_module) do
     joined =
       [:"Elixir" | elixir_module]
-      |> Enum.map(&Atom.to_string/1)
-      |> Enum.join(".")
+      |> Enum.map_join(".", &Atom.to_string/1)
 
     {:ok, "'#{joined}'"}
   end
@@ -292,8 +305,7 @@ defmodule Rexbug.Translator do
   end
 
   defp translate_arg(string) when is_binary(string) do
-    # TODO: more strict ASCII checking here
-    if String.printable?(string) && byte_size(string) == String.length(string) do
+    if List.ascii_printable?(String.to_charlist(string)) do
       {:ok, "<<\"#{string}\">>"}
     else
       translate_arg({:<<>>, [line: 1], [string]})
@@ -317,6 +329,13 @@ defmodule Rexbug.Translator do
     |> Enum.map(&translate_arg/1)
     |> collapse_errors()
     |> map_success(fn elements -> "[#{Enum.join(elements, ", ")}]" end)
+  end
+
+  # for situations like [h1, h2 | t]
+  defp translate_arg({:|, _line, [h, t]}) do
+    with {:ok, th} <- translate_arg(h),
+         {:ok, tt} <- translate_arg(t),
+         do: {:ok, "#{th} | #{tt}"}
   end
 
   defp translate_arg({:-, _line, [num]}) when is_integer(num) do
@@ -354,12 +373,19 @@ defmodule Rexbug.Translator do
         middle =
           keys
           |> Enum.zip(values)
-          |> Enum.map(fn {k, v} -> "#{k} => #{v}" end)
-          |> Enum.join(", ")
+          |> Enum.map_join(", ", fn {k, v} -> "#{k} => #{v}" end)
 
         "\#{#{middle}}"
       end)
     end
+  end
+
+  # structs
+  defp translate_arg(
+         {:%, line, [{:__aliases__, _line2, _module_segments} = module, {:%{}, _line3, map_kvs}]}
+       ) do
+    new_kv = {:__struct__, module}
+    translate_arg({:%{}, line, [new_kv | map_kvs]})
   end
 
   # there's a catch here:
@@ -383,6 +409,10 @@ defmodule Rexbug.Translator do
     |> Atom.to_string()
     |> String.capitalize()
     |> wrap_in_ok()
+  end
+
+  defp translate_arg({:__aliases__, _line, elixir_module} = module) when is_list(elixir_module) do
+    translate_module(module)
   end
 
   defp translate_arg(arg) do
@@ -455,6 +485,14 @@ defmodule Rexbug.Translator do
   defp _translate_guards(els), do: translate_guard(els)
 
   @spec translate_guard(term) :: {:ok, String.t()} | {:error, term}
+  defp translate_guard({:is_nil, line, [arg]}) do
+    translate_guard({:==, line, [arg, nil]})
+  end
+
+  defp translate_guard({:elem, line, [tuple, idx]}) when is_integer(idx) do
+    translate_guard({:element, line, [idx + 1, tuple]})
+  end
+
   defp translate_guard({guard_fun, _line, args})
        when guard_fun in @valid_guard_functions do
     with translated_fun = Atom.to_string(guard_fun),

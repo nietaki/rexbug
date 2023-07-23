@@ -57,6 +57,22 @@ defmodule RexbugIntegrationTest do
     test "multiple trace patterns", do: validate([":ets", ":dets"])
   end
 
+  @tag :coveralls_safe
+  test "stop_sync/0 works" do
+    options = [time: 20_000, procs: [self()]]
+
+    capture_io(fn ->
+      assert {1, _} = Rexbug.start(":crypto", options)
+      redbug_process = Process.whereis(:redbug)
+      assert redbug_process != nil
+      assert is_pid(redbug_process)
+
+      Rexbug.stop_sync()
+      redbug_process = Process.whereis(:redbug)
+      assert redbug_process == nil
+    end)
+  end
+
   describe "actual integration tests" do
     test "simple case" do
       trigger = fn -> Foo.Bar.abc() end
@@ -77,6 +93,39 @@ defmodule RexbugIntegrationTest do
       assert_triggers(trigger, "Foo.Bar.xyz(x, _, _) when is_integer(x) and x > 0")
     end
 
+    test "matching to the same variable on same argument values" do
+      trigger_same = fn -> Foo.Bar.xyz(1, 1, [1, :four]) end
+      trigger_diff = fn -> Foo.Bar.xyz(1, 2, [3, :four]) end
+
+      assert_triggers(trigger_same, "Foo.Bar.xyz(x, x, _)")
+      refute_triggers(trigger_same, "Foo.Bar.xyz(x, _, x)")
+      refute_triggers(trigger_diff, "Foo.Bar.xyz(x, x, _)")
+
+      assert_triggers(trigger_same, "Foo.Bar.xyz(x, _, [x, _])")
+      refute_triggers(trigger_diff, "Foo.Bar.xyz(x, _, [x, _])")
+      refute_triggers(trigger_same, "Foo.Bar.xyz(x, _, [_, x])")
+    end
+
+    test "matching on heads of lists" do
+      trigger = fn -> Foo.Bar.xyz(1, 1, [1, :four]) end
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_ | _])")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, [x | y])")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, _, [x | y])")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, [x, y | empty_list])")
+      refute_triggers(trigger, "Foo.Bar.xyz(_, _, [x, y, z | not_here])")
+      refute_triggers(trigger, "Foo.Bar.xyz(y, _, [x | y])")
+    end
+
+    test "module name as an argument" do
+      trigger = fn -> Foo.Bar.xyz(Foo.Bar, "b", [3, :four]) end
+      assert_triggers(trigger, "Foo.Bar.xyz/_")
+      assert_triggers(trigger, "Foo.Bar.xyz(_, _, _)")
+      assert_triggers(trigger, "Foo.Bar.xyz(Foo.Bar, _, _)")
+
+      refute_triggers(trigger, "Foo.Bar.xyz(13, _, _)")
+      refute_triggers(trigger, "Foo.Bar.xyz(Foo, _, _)")
+    end
+
     test "list manipulation in guards" do
       trigger = fn -> Foo.Bar.xyz(1, "b", [3, :four]) end
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_, _])")
@@ -90,6 +139,105 @@ defmodule RexbugIntegrationTest do
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, [_, :four])")
       assert_triggers(trigger, "Foo.Bar.xyz(_, _, ls) when tl(ls) == [:four]")
     end
+
+    test "is_nil" do
+      trigger = fn -> Foo.Bar.xyz(Foo.Bar, "b", nil) end
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when is_nil(x)")
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when is_nil(y)")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, y, z) when is_nil(z)")
+    end
+
+    test "elem" do
+      trigger = fn -> Foo.Bar.xyz(Foo.Bar, "b", {:a, :b, :c}) end
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when elem(z, 0) == :c")
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when elem(z, 1) == :c")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, y, z) when elem(z, 2) == :c")
+    end
+
+    @tag :skip
+    test "in" do
+      trigger = fn -> Foo.Bar.xyz(Foo.Bar, "b", 5) end
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when z in [1, 2, 3]")
+      refute_triggers(trigger, "Foo.Bar.xyz(x, y, z) when z in [1, 2, 3, 4]")
+      assert_triggers(trigger, "Foo.Bar.xyz(x, y, z) when z in [4, 5, 6]")
+    end
+  end
+
+  describe "pattern matching structs" do
+    test "matching using :__struct__" do
+      struct = %Foo.Bar{ba: 1}
+      trigger = fn -> Foo.foo(struct) end
+      assert_triggers(trigger, "Foo.foo(%{__struct__: _})")
+      assert_triggers(trigger, "Foo.foo(%{:__struct__ => _})")
+      assert_triggers(trigger, "Foo.foo(%{__struct__: Foo.Bar})")
+      assert_triggers(trigger, "Foo.foo(%{__struct__: _, ba: 1})")
+
+      refute_triggers(trigger, "Foo.foo(%{__struct__: Foo})")
+      refute_triggers(trigger, "Foo.foo(%{__struct__: Foo.Bar, ba: 2})")
+    end
+
+    test "matching using %Module.Name{}" do
+      struct = %Foo.Bar{ba: 1}
+      trigger = fn -> Foo.foo(struct) end
+      assert_triggers(trigger, "Foo.foo(%Foo.Bar{})")
+      assert_triggers(trigger, "Foo.foo(%Foo.Bar{ba: 1})")
+
+      refute_triggers(trigger, "Foo.foo(%Foo{})")
+      refute_triggers(trigger, "Foo.foo(%Foo{ba: 1})")
+      refute_triggers(trigger, "Foo.foo(%Foo.Bar{ba: 2})")
+    end
+
+    # is_map_key not supported by redbug
+    @tag :skip
+    test "matching using is_struct/1 guard" do
+      struct = %Foo.Bar{ba: 1}
+      trigger = fn -> Foo.foo(struct) end
+      trigger_map = fn -> Foo.foo(%{}) end
+
+      assert_triggers(trigger, "Foo.foo(s) when is_map(s)")
+      refute_triggers(trigger_map, "Foo.foo(s) when is_struct(s)")
+      assert_triggers(trigger, "Foo.foo(s) when is_struct(s)")
+    end
+  end
+
+  describe "Rexbug.start() options" do
+    test "print_msec is respected" do
+      match_time = fn input ->
+        input
+        |> String.split("\n")
+        |> Enum.map(&Regex.run(~r/^# (\d{2}:\d{2}:\d{2})(\.\d{3})?/, &1))
+        |> Enum.filter(&is_list/1)
+        |> Enum.at(0)
+      end
+
+      trigger = fn -> Enum.reverse([1, 2, 3]) end
+
+      output = capture_output(trigger, "Enum.reverse/1", print_msec: false)
+      assert [_beginning, _time] = match_time.(output)
+
+      output = capture_output(trigger, "Enum.reverse/1", print_msec: true)
+      assert [_beginning, _time, _msec] = match_time.(output)
+
+      # default should be true
+      output = capture_output(trigger, "Enum.reverse/1")
+      assert [_beginning, _time, _msec] = match_time.(output)
+    end
+
+    test "print_re performs some filtering" do
+      trigger = fn -> Enum.reverse([1, 2]) ++ Enum.reverse([:foo, :bar]) end
+
+      output = capture_output(trigger, "Enum.reverse/1")
+      unfiltered_lines = String.split(output, "\n")
+
+      output = capture_output(trigger, "Enum.reverse/1", print_re: ~r/foo/)
+      filtered_lines = String.split(output, "\n")
+
+      output = capture_output(trigger, "Enum.reverse/1", print_re: ~r/./)
+      lines_with_always_matching_regex = String.split(output, "\n")
+
+      assert Enum.count(unfiltered_lines) > Enum.count(filtered_lines)
+      assert Enum.count(unfiltered_lines) == Enum.count(lines_with_always_matching_regex)
+    end
   end
 
   # ===========================================================================
@@ -97,7 +245,7 @@ defmodule RexbugIntegrationTest do
   # ===========================================================================
 
   defp validate(elixir_invocation, options \\ []) do
-    options = [time: 20, procs: [self()]] ++ options
+    options = Keyword.merge([time: 200, procs: [self()]], options)
 
     capture_io(fn ->
       assert {1, y} = res = Rexbug.start(elixir_invocation, options)
@@ -122,7 +270,7 @@ defmodule RexbugIntegrationTest do
        when is_function(trigger_fun, 0) and is_binary(spec) do
     capture_io(fn ->
       me = self()
-      tell_me = fn msg -> send(me, {:triggered, msg}) end
+      tell_me = fn msg -> tell_me_non_meta(me, msg) end
       options = [time: 100, procs: [me], print_fun: tell_me]
       assert {1, _} = Rexbug.start(spec, options)
       trigger_fun.()
@@ -143,6 +291,40 @@ defmodule RexbugIntegrationTest do
         false -> assert(!triggered, "the function shouldn't trigger `#{spec}`, but it did")
       end
     end)
+  end
+
+  defp tell_me_non_meta(me, msg) do
+    case msg do
+      {:meta, _, _, _} -> :ok
+      _ -> send(me, {:triggered, msg})
+    end
+  end
+
+  defp capture_output(trigger_fun, spec, options \\ [])
+       when is_function(trigger_fun, 0) and is_binary(spec) do
+    capture_io(fn ->
+      options = Keyword.merge([time: 100, procs: [self()]], options)
+      assert {1, _} = Rexbug.start(spec, options)
+      trigger_fun.()
+      :ok = wait_for_redbug_to_finish(500)
+    end)
+  end
+
+  defp wait_for_redbug_to_finish(timeout_ms) do
+    case Process.whereis(:redbug) do
+      nil ->
+        :ok
+
+      pid ->
+        ref = Process.monitor(pid)
+
+        receive do
+          {:DOWN, ^ref, _, _, _} ->
+            :ok
+        after
+          timeout_ms -> {:error, :timeout}
+        end
+    end
   end
 
   defp stop_safely() do

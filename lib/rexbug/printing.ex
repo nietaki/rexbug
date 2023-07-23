@@ -15,6 +15,9 @@ defmodule Rexbug.Printing do
   # ===========================================================================
 
   defmodule MFA do
+    @moduledoc """
+    Represents the redbug {module, function, arity/args} tuple and handles its printing
+    """
     @type t :: %__MODULE__{}
 
     defstruct [
@@ -45,10 +48,7 @@ defmodule Rexbug.Printing do
 
       arep =
         if is_list(a) do
-          middle =
-            a
-            |> Enum.map(&printing_inspect/1)
-            |> Enum.join(", ")
+          middle = Enum.map_join(a, ", ", &printing_inspect/1)
 
           "(#{middle})"
         else
@@ -60,6 +60,9 @@ defmodule Rexbug.Printing do
   end
 
   defmodule Timestamp do
+    @moduledoc """
+    Represents the redbug timestamp tuple and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(hours minutes seconds us)a
 
@@ -68,7 +71,7 @@ defmodule Rexbug.Printing do
     end
 
     def represent(%__MODULE__{hours: h, minutes: m, seconds: s, us: us}, opts) do
-      if Keyword.get(opts, :print_msec, false) do
+      if Keyword.get(opts, :print_msec, true) do
         "#{format_int(h)}:#{format_int(m)}:#{format_int(s)}.#{format_int(div(us, 1000), 3)}"
       else
         "#{format_int(h)}:#{format_int(m)}:#{format_int(s)}"
@@ -87,6 +90,9 @@ defmodule Rexbug.Printing do
   # ---------------------------------------------------------------------------
 
   defmodule Call do
+    @moduledoc """
+    Represents the redbug call info and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(mfa dump from_pid from_mfa time)a
 
@@ -106,12 +112,14 @@ defmodule Rexbug.Printing do
     defp represent_stack(dump, _opts) do
       dump
       |> Printing.extract_stack()
-      |> Enum.map(fn fun_rep -> "\n#   #{fun_rep}" end)
-      |> Enum.join("")
+      |> Enum.map_join(fn fun_rep -> "\n#   #{fun_rep}" end)
     end
   end
 
   defmodule Return do
+    @moduledoc """
+    Represents the redbug function return info and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(mfa return_value from_pid from_mfa time)a
 
@@ -127,6 +135,9 @@ defmodule Rexbug.Printing do
   end
 
   defmodule Send do
+    @moduledoc """
+    Represents the message send info and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(msg to_pid to_mfa from_pid from_mfa time)a
 
@@ -143,6 +154,9 @@ defmodule Rexbug.Printing do
   end
 
   defmodule Receive do
+    @moduledoc """
+    Represents the message receive info and handles its printing
+    """
     @type t :: %__MODULE__{}
     defstruct ~w(msg to_pid to_mfa time)a
 
@@ -153,6 +167,22 @@ defmodule Rexbug.Printing do
       msg = printing_inspect(struct.msg)
 
       "# #{ts} #{to_pid} #{to_mfa}\n# <<< #{msg}"
+    end
+  end
+
+  defmodule Meta do
+    @moduledoc """
+    Represents redbug meta messages
+    """
+    @type t :: %__MODULE__{}
+    defstruct ~w(event data time)a
+
+    def represent(%__MODULE__{} = struct, opts) do
+      event = printing_inspect(struct.event)
+      data = printing_inspect(struct.data)
+      ts = Timestamp.represent(struct.time, opts)
+      _ = "# #{ts} - META: #{event} #{data}\n"
+      nil
     end
   end
 
@@ -173,8 +203,24 @@ defmodule Rexbug.Printing do
 
   @doc false
   @spec print_with_opts(tuple(), Keyword.t()) :: :ok
+
   def print_with_opts(message, opts) do
-    IO.puts("\n" <> format(message, opts))
+    print_re = Keyword.get(opts, :print_re)
+
+    case {format(message, opts), print_re} do
+      {nil, _} ->
+        :ok
+
+      {s, nil} when is_binary(s) ->
+        IO.puts("\n" <> s)
+
+      {s, %Regex{}} when is_binary(s) ->
+        if Regex.match?(print_re, s) do
+          IO.puts("\n" <> s)
+        else
+          :ok
+        end
+    end
   end
 
   @doc false
@@ -245,6 +291,16 @@ defmodule Rexbug.Printing do
     }
   end
 
+  # This seems to be sent by redbug to signify the redbug operation has stopped
+  #   PrintFun({meta, stop, dummy, {0, 0, 0, 0}}, Acc)
+  def from_erl({:meta, event, data, time}) do
+    %Meta{
+      event: event,
+      data: data,
+      time: Timestamp.from_erl(time)
+    }
+  end
+
   # fallthrough so that you can use it indiscriminately
   def from_erl(message) do
     message
@@ -259,7 +315,7 @@ defmodule Rexbug.Printing do
   end
 
   @doc false
-  def represent(%mod{} = struct, opts) when mod in [Call, Return, Send, Receive] do
+  def represent(%mod{} = struct, opts) when mod in [Call, Return, Send, Receive, Meta] do
     mod.represent(struct, opts)
   end
 

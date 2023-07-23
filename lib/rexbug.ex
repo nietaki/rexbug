@@ -60,7 +60,6 @@ defmodule Rexbug do
   target       (Node.self()) node to trace on
   cookie       (host cookie) target node cookie
   blocking     (false)       block start/2, return a list of messages
-  arity        (false)       print arity instead of arg list
   buffered     (false)       buffer messages till end of trace
   discard      (false)       discard messages (when counting)
   max_queue    (5_000)       fail if internal queue gets this long
@@ -68,11 +67,12 @@ defmodule Rexbug do
   procs        (:all)        (list of) Erlang process(es)
                               :all|:new|pid()|atom(reg_name)|{:pid,i2,i3}
     print-related opts:
+  arity        (false)       print arity instead of arg list
   print_calls  (true)        print calls
   print_file   (standard_io) print to this file
   print_msec   (false)       print milliseconds on timestamps
   print_depth  (999_999)     formatting depth for "~P"
-  print_re     ("")          print only messages that match this regex
+  print_re     (~r/./)       print only messages that match this regex
   print_return (true)        print return value (if "return" action given)
   print_fun    ()            custom print handler, fun/1 or fun/2;
                               fun(trace_msg :: term) :: <ignored>
@@ -82,6 +82,10 @@ defmodule Rexbug do
   file         (none)        use a trc file based on this name
   file_size    (1)           size of each trc file
   file_count   (8)           number of trc files
+
+  ---
+
+  For Rexbug.dtop() help run Rexbug.dtop_help()
   """
 
   alias Rexbug.Translator
@@ -168,9 +172,8 @@ defmodule Rexbug do
   | time           | `15_000`      | stop tracing after this many milliseconds                                           |
   | msgs           | `10`          | stop tracing after this many messages                                               |
   | target         | `Node.self()` | node to trace on                                                                    |
-  | cookie         | host cookie   | target node cookie                                                                  |
+  | cookie         | host cookie   | target node cookie [see comment](#start/2-cookie)                                   |
   | blocking       | `false`       | block on `start/2` and return a list of messages. [see comment](#start/2-blocking)  |
-  | arity          | `false`       | print arity instead of argument list                                                |
   | buffered       | `false`       | buffer messages till end of trace                                                   |
   | discard        | `false`       | discard messages (when counting)                                                    |
   | max_queue      | `5_000`       | fail if internal queue gets this long                                               |
@@ -180,11 +183,12 @@ defmodule Rexbug do
   ## Print-related options
   | option       | default     | meaning                                                                                         |
   | ---          | ---         | ---                                                                                             |
+  | arity        | `false`     | print arity instead of argument list                                                            |
   | print_calls  | `true`      | print calls                                                                                     |
   | print_file   | standard_io | if provided, prints messages to the specified file                                              |
-  | print_msec   | `false`     | print milliseconds on timestamps                                                                |
+  | print_msec   | `true`      | print milliseconds on timestamps                                                                |
   | print_depth  | `999_999`   | formatting depth for `"~P"`                                                                     |
-  | print_re     | `""`        | print only messages that match this regex                                                       |
+  | print_re     | `~r/./`     | print only messages that match this regex                                                       |
   | print_return | `true`      | if set to `false`, won't print the return values. Relevant only if `return` action is specified |
   | print_fun    | none        | Custom print handler. [see comment](#start/2-print_fun)                                         |
 
@@ -224,6 +228,11 @@ defmodule Rexbug do
   The function can be in the `fun(trace_msg :: term) :: <ignored>` format
   or the `fun(trace_msg, acc_old) :: acc_new` format. If you use the latter format,
   the initial accumulator will be `0`.
+
+  ### `:cookie`
+
+  Attempting to set a cookie when running on a single Node that's **not** part of
+  a distributed system will result in a `{:oops, {:error, :badarg}}` error.
   """
   def start(trace_pattern, options) do
     with {:ok, options} <- Translator.translate_options(options),
@@ -231,6 +240,16 @@ defmodule Rexbug do
          {:ok, translated} <- Translator.translate(trace_pattern) do
       :redbug.start(translated, options)
     end
+  end
+
+  defp add_default_options(opts) do
+    print_fun = fn t -> Rexbug.Printing.print_with_opts(t, opts) end
+
+    default_options = [
+      print_fun: print_fun
+    ]
+
+    Keyword.merge(default_options, opts)
   end
 
   @spec stop() :: :stopped | :not_started
@@ -282,13 +301,15 @@ defmodule Rexbug do
     :ok
   end
 
-  defp add_default_options(opts) do
-    print_fun = fn t -> Rexbug.Printing.print_with_opts(t, opts) end
+  @spec dtop_help() :: :ok
+  def dtop_help() do
+    IO.puts(Rexbug.Dtop.dtop_doc())
+    :ok
+  end
 
-    default_options = [
-      print_fun: print_fun
-    ]
-
-    Keyword.merge(default_options, opts)
+  @doc Rexbug.Dtop.dtop_doc()
+  @spec dtop(Keyword.t() | %{}) :: {:ok, :started | :reconfigured | :stopped} | {:error, term()}
+  def dtop(opts \\ []) do
+    Rexbug.Dtop.dtop(opts)
   end
 end

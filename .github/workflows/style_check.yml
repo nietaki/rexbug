@@ -1,0 +1,71 @@
+on: push
+
+jobs:
+  style-check:
+    runs-on: ubuntu-20.04
+    name: style-check - OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
+    strategy:
+      matrix:
+        otp: ["25.3"]
+        elixir: ["1.14.5"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Elixir
+        id: beam
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+      - run: mix deps.get
+      - run: mix format --check-formatted
+      - run: mix coveralls.github --exclude integration --include coveralls_safe
+        if: always()
+        env:
+          MIX_ENV: test
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ignore refactoring opportunities (exit code 8)
+      - run: mix credo --all --verbose || exit $(( $? & ~8 ))
+        if: always()
+      - run: mix docs
+        if: always()
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: doc
+          path: doc/
+
+      # Don't cache PLTs based on mix.lock hash, as Dialyzer can incrementally update even old ones
+      # Cache key based on Elixir & Erlang version (also useful when running in matrix)
+      - name: Restore PLT from cache
+        if: always()
+        uses: actions/cache/restore@v3
+        id: plt_cache_restore
+        with:
+          key: |
+            ${{ runner.os }}-${{ steps.beam.outputs.elixir-version }}-${{ steps.beam.outputs.otp-version }}-dev-plt
+          path: |
+            priv/plts
+
+      - name: print restore step cache hit status
+        if: always()
+        run: echo "${{steps.plt_cache.outputs.cache-hit}}"
+
+      # Create PLTs if no cache was found
+      - name: Create PLTs
+        # without the always() the other part won't get evaluated if one of the previous steps failed
+        if: always() && (steps.plt_cache.outputs.cache-hit != 'true')
+        run: mix dialyzer --plt
+
+      - name: Run dialyzer
+        if: always()
+        run: mix dialyzer --format github
+
+      - name: cache PLTs
+        if: always()
+        id: plt_cache_save 
+        uses: actions/cache/save@v3
+        with:
+          key: ${{ steps.plt_cache_restore.outputs.cache-primary-key }}
+          path: |
+            priv/plts

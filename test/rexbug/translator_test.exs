@@ -84,6 +84,10 @@ defmodule Rexbug.TranslatorTest do
       assert {:ok, [:send, '\'ets\'']} = translate([:send, ":ets"])
       assert {:error, :invalid_trace_pattern_type} = translate([:send, ":ets", :wat])
     end
+
+    test "rejects h | t patterns not inside a list" do
+      assert {:error, _} = translate(":cowboy(h | t)")
+    end
   end
 
   describe "Translator.translate/1 translating args" do
@@ -129,6 +133,14 @@ defmodule Rexbug.TranslatorTest do
       assert_args('[1, X], 3', "[1, x], 3")
     end
 
+    test "matching on head and tail" do
+      assert_args('[1 | X]', "[1 | x]")
+    end
+
+    test "matching on heads and tail" do
+      assert_args('[1, 2 | X]', "[1, 2 | x]")
+    end
+
     test "tuples" do
       assert_args('{}', "{}")
       assert_args('{A, B}', "{a, b}")
@@ -143,12 +155,18 @@ defmodule Rexbug.TranslatorTest do
     test "maps" do
       assert_args('\#{1 => One, \'two\' => 2}', "%{1 => one, :two => 2}")
       assert_args('\#{\'name\' => _}', "%{name: _}")
+      assert_args('\#{\'__struct__\' => \'Elixir.Foo.Bar\'}', "%{__struct__: Foo.Bar}")
       assert_args('\#{}', "%{}")
       assert_args('\#{\'foo\' => \#{1 => _}}', "%{foo: %{1 => _}}")
     end
 
     test "maps with invalid matching of variable in the key" do
       assert_args_error("%{name => _}")
+    end
+
+    test "structs" do
+      assert_args('\#{\'__struct__\' => \'Elixir.Foo.Bar\'}', "%Foo.Bar{}")
+      assert_args('\#{\'__struct__\' => \'Elixir.Foo.Bar\', \'ba\' => 1}', "%Foo.Bar{ba: 1}")
     end
   end
 
@@ -170,6 +188,16 @@ defmodule Rexbug.TranslatorTest do
       assert {:ok, [file: 'a.txt', print_file: 'b.txt']} ==
                translate_options(file: "a.txt", print_file: "b.txt")
     end
+
+    test "only accepts Regex struct as print_re" do
+      assert {:ok, [print_re: ~r/foo/]} == translate_options(print_re: ~r/foo/)
+      assert {:ok, [print_re: nil]} == translate_options(print_re: nil)
+
+      assert {:error, :invalid_print_re} = translate_options(print_re: 1)
+      assert {:error, :invalid_print_re} = translate_options(print_re: :foo)
+      assert {:error, :invalid_print_re} = translate_options(print_re: "foo")
+      assert {:error, :invalid_print_re} = translate_options(print_re: 'foo')
+    end
   end
 
   describe "Translator.split_to_mfag_and_actions!/1" do
@@ -182,6 +210,52 @@ defmodule Rexbug.TranslatorTest do
       assert {":foo", ""} == split_to_mfag_and_actions!(":foo")
     end
   end
+
+  @elixir_guards [
+    "abs/1",
+    # "and/2",
+    "binary_part/3",
+    "bit_size/1",
+    "byte_size/1",
+    "ceil/1",
+    "div/2",
+    # "elem/2",
+    "floor/1",
+    "hd/1",
+    # "in/2",
+    "is_atom/1",
+    "is_binary/1",
+    "is_bitstring/1",
+    "is_boolean/1",
+    # "is_exception/1",
+    # "is_exception/2",
+    "is_float/1",
+    "is_function/1",
+    "is_function/2",
+    "is_integer/1",
+    "is_list/1",
+    "is_map/1",
+    "is_map_key/2",
+    # "is_nil/1",
+    "is_number/1",
+    "is_pid/1",
+    "is_port/1",
+    "is_reference/1",
+    # "is_struct/1",
+    # "is_struct/2",
+    "is_tuple/1",
+    "length/1",
+    "map_size/1",
+    "node/0",
+    "node/1",
+    "not/1",
+    "rem/2",
+    "round/1",
+    "self/0",
+    "tl/1",
+    "trunc/1",
+    "tuple_size/1"
+  ]
 
   describe "Translator.translate/1 translating guards" do
     test "a simple is_integer()" do
@@ -199,6 +273,15 @@ defmodule Rexbug.TranslatorTest do
 
     test "alternative of two guards" do
       assert_guards('(is_integer(X) orelse is_float(X))', "is_integer(x) or is_float(x)")
+    end
+
+    # is_map_key not supported by redbug
+    @tag :skip
+    test "is_struct translates to more basic guards" do
+      basic = ":a.b(x) when (is_map(x) and is_map_key(:__struct__, x))"
+      input = ":a.b(x) when is_struct(x)"
+      assert {:ok, expected} = translate(basic)
+      assert {:ok, expected} == translate(input)
     end
 
     test "comparison in guards" do
@@ -233,19 +316,48 @@ defmodule Rexbug.TranslatorTest do
 
     test "operator precedence" do
       assert_guards(
-        '((is_nil(X) andalso is_nil(Y)) orelse is_nil(Z))',
-        "is_nil(x) and is_nil(y) or is_nil(z)"
+        '((is_pid(X) andalso is_pid(Y)) orelse is_pid(Z))',
+        "is_pid(x) and is_pid(y) or is_pid(z)"
       )
 
       assert_guards(
-        '(is_nil(X) orelse (is_nil(Y) andalso is_nil(Z)))',
-        "is_nil(x) or is_nil(y) and is_nil(z)"
+        '(is_pid(X) orelse (is_pid(Y) andalso is_pid(Z)))',
+        "is_pid(x) or is_pid(y) and is_pid(z)"
       )
+    end
+
+    test "is_nil special case" do
+      assert_guards('X == nil', "is_nil(x)")
+    end
+
+    test "elem special case" do
+      assert_guards('element(1, X)', "elem(x, 0)")
+    end
+
+    @tag :skip
+    test "in special case" do
+      assert_guards('X in [1, 2, 3]', "x in [1, 2, 3]")
     end
 
     test "nil translation" do
       assert_guards('X /= nil', "x != nil")
-      assert_guards('not is_nil(X)', "not is_nil(x)")
+      assert_guards('not is_pid(X)', "not is_pid(x)")
+    end
+
+    test "all valid elixir guards" do
+      erl_ends = %{0 => '()', 1 => '(X)', 2 => '(X, Y)', 3 => '(X, Y, Z)'}
+      elx_ends = %{0 => "()", 1 => "(x)", 2 => "(x, y)", 3 => "(x, y, z)"}
+
+      @elixir_guards
+      |> Enum.each(fn str ->
+        [name, arity] = String.split(str, "/")
+        arity = String.to_integer(arity)
+        erl = String.to_charlist(name) ++ erl_ends[arity] ++ ' == true'
+        elx = name <> elx_ends[arity] <> " == true"
+
+        assert function_exported?(:erlang, String.to_atom(name), arity)
+        assert_guards(erl, elx)
+      end)
     end
   end
 
