@@ -14,8 +14,8 @@ err() {
 
 git remote -v | grep -q "git@github.com" || \
     err "git is readonly"
-# (git push && git status) | grep "Your branch is up to date with 'origin/master'." || \
-#     err "git is dirty"
+(git push && git status) | grep "Your branch is up to date with 'origin/master'." || \
+    err "branch is not up to date with origin/master"
 mix hex.user whoami | grep -q "nietaki" || \
     err "not logged in to hex as nietaki"
 
