@@ -2,12 +2,12 @@ on: push
 
 jobs:
   style-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     name: style-check - OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
     strategy:
       matrix:
         otp: ["25.3"]
-        elixir: ["1.14.3"]
+        elixir: ["1.14.5"]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Elixir
