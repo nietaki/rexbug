@@ -30,7 +30,7 @@ intuitive interface while making it more convenient to use by Elixir developers.
 - [x] fix all TODOs, make sure style checks are passing
 - [ ] update readme with examples from the new tests
 - [x] update Rexbug.help
-- [ ] establish the range of Elixir/OTP version where rexbug 2.0 can be used
+- [x] establish the range of Elixir/OTP version where rexbug 2.0 can be used
 
 # README
 
@@ -229,7 +229,13 @@ Rexbug.start("Map.new/_ :: return;stack")
 
 ## FAQ
 
-<!-- ### How do I use it with my mix project? -->
+### Which versions of Elixir and Erlang/OTP does Rexbug support?
+
+- Elixir 1.11.4 and newer 
+- Erlang/OTP 24 and newer 
+
+Make sure to check the [general Erlang/Elixir compatibility table](https://hexdocs.pm/elixir/1.15.4/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp)
+
 
 ### My app is already running and it doesn't have Rexbug in its dependencies. Can I still debug it?
 

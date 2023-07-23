@@ -15,7 +15,7 @@ defmodule Rexbug.Mixfile do
     [
       app: :rexbug,
       version: "1.0.6",
-      elixir: "~> 1.3",
+      elixir: ">= 1.11.4",
       package: package(),
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
