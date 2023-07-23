@@ -32,7 +32,8 @@ defmodule Rexbug.Mixfile do
         "coveralls.post": :test,
         "coveralls.detail": :test,
         "coveralls.github": :test,
-        test: :test
+        test: :test,
+        "test.watch": :test
       ],
       docs: docs()
     ]
@@ -91,12 +92,13 @@ defmodule Rexbug.Mixfile do
       {:dialyxir, ">= 1.0.0", only: [:dev], optional: true, runtime: false},
       {:ex_doc, ">= 0.18.0", optional: true, only: :dev},
       {:excoveralls, "~> 0.16", optional: true, only: :test},
-      {:mix_test_watch, ">= 0.5.0", optional: true, runtime: false}
+      {:mix_test_watch, ">= 0.5.0", optional: true, runtime: false, only: [:dev, :test]}
     ]
   end
 
   defp package do
     [
+      build_tools: ["mix"],
       licenses: ["MIT"],
       maintainers: ["Jacek Królikowski <nietaki@gmail.com>"],
       links: %{

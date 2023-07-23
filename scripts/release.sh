@@ -28,6 +28,10 @@ VSN=$(grep -oe "version: \".*\"" mix.exs | cut -d \" -f 2)
 echo "will release 'v$VSN'"
 
 mix rexbug.check
+echo ""
+mix hex.build
+echo ""
+echo ""
 
 # if [[ -z $(git status -s) ]]
 # then
@@ -38,6 +42,8 @@ mix rexbug.check
 
 echo "will commit, tag and release"
 echo "press <ENTER> to continue or <C-C> to cancel"
+
+read
 
 # git add "$MIXEXS"
 git add .
