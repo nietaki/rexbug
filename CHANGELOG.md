@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reach 96% test coverage
 - Fix `print_re` option handling
 - Remove `mix_test_watch` and `make` from formal package dependencies
+- Add the `scripts/release.sh` tool
 
 ## [1.0.6](https://github.com/nietaki/rexbug/tree/v1.0.6) - 2022-09-23
 
