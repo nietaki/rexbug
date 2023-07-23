@@ -1,20 +1,15 @@
 defmodule Rexbug.Mixfile do
   use Mix.Project
 
-  # RELEASE CHECKLIST
-  # - update the version here
-  # - update CHANGELOG.md
-  # - update "Installation" section in the README with the new version
-  # - check if README is outdated
-  # - make sure there's no obviously missing or outdated docs
-  # - commit updated version to master
-  # - check build status
-  # - create and push new tag
-  #   - git tag -a v1.0.X
-  #   - git push origin v1.0.X
-  # - build and publish the hex package
-  #   - mix hex.build
-  #   - mix hex.publish
+  #
+  # # RELEASE CHECKLIST
+  #
+  # 1. update the version here
+  # 2. update CHANGELOG.md
+  # 3. update "Installation" section in the README with the new version
+  # 4. check if README is outdated
+  # 5. run ./scripts/release.sh
+  #
 
   def project do
     [
