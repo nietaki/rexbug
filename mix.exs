@@ -14,7 +14,7 @@ defmodule Rexbug.Mixfile do
   def project do
     [
       app: :rexbug,
-      version: "1.0.6",
+      version: "2.0.0-rc1",
       elixir: ">= 1.11.4",
       package: package(),
       elixirc_paths: elixirc_paths(Mix.env()),

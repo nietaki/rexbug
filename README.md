@@ -2,35 +2,15 @@
 
 ![Hex.pm](https://img.shields.io/hexpm/v/rexbug)
 [![Hex.pm](https://img.shields.io/hexpm/dt/rexbug)](https://hex.pm/packages/rexbug)
-![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/nietaki/rexbug/test.yml?branch=v2&label=tests)
-![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/nietaki/rexbug/style_check.yml?branch=v2&label=style%20check)
-[![Coverage Status](https://coveralls.io/repos/github/nietaki/rexbug/badge.svg?branch=v2)](https://coveralls.io/github/nietaki/rexbug?branch=v2)
+![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/nietaki/rexbug/test.yml?label=tests)
+![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/nietaki/rexbug/style_check.yml?label=style%20check)
+[![Coverage Status](https://coveralls.io/repos/github/nietaki/rexbug/badge.svg)](https://coveralls.io/github/nietaki/rexbug)
 [![docs](https://img.shields.io/badge/docs-hexdocs-yellow.svg)](https://hexdocs.pm/rexbug/)
-
-**Note: Development has been moved to the [v2 branch](https://github.com/nietaki/rexbug/tree/v2)**
 
 `Rexbug` is a thin Elixir wrapper for [`:redbug`](https://hex.pm/packages/redbug)
 production-friendly Erlang tracing debugger.
 It tries to preserve [`:redbug`](https://hex.pm/packages/redbug)'s simple and
 intuitive interface while making it more convenient to use by Elixir developers.
-
-
-## Non-exhaustive 2.0 checklist
-
-- [x] test matching on map keys
-- [x] test binding to the same variable
-- [x] verify all redbug 2.x options are supported
-- [x] add unit tests for options (to use in examples as well): print_msec, print_re
-- [x] add and test matching on structs
-- [x] investigate is_struct() guard
-- [x] investigate matching on heads of lists
-- [x] add :redbug.dtop()
-- [x] investigate matching on records
-- [x] verify the list of working guards is up to date
-- [x] fix all TODOs, make sure style checks are passing
-- [ ] update readme with examples from the new tests
-- [x] update Rexbug.help
-- [x] establish the range of Elixir/OTP version where rexbug 2.0 can be used
 
 # README
 
@@ -83,7 +63,7 @@ in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:rexbug, ">= 1.0.0"}]
+  [{:rexbug, ">= 2.0.0-rc1"}]
 end
 ```
 
@@ -301,6 +281,8 @@ Rexbug.start("Map.new/_ :: return;stack")
 
 - Elixir 1.11.4 and newer 
 - Erlang/OTP 24 and newer 
+
+**If you're targeting an older system, try Rexbug 1.x, which handles Elixir 1.4 and newer**
 
 Make sure to check the [general Erlang/Elixir compatibility table](https://hexdocs.pm/elixir/1.15.4/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp)
 

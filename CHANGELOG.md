@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-rc1](https://github.com/nietaki/rexbug/tree/v1.0.6) - 2023-07-23
+
+- Update to [`redbug 2.0`](https://hex.pm/packages/redbug/2.0.9)
+- Support for matching on structs
+- Add `Rexbug.dtop/1`
+- Improve guard functions support
+- Improve matching on lists
+- Reach 96% test coverage
+- Fix `print_re` option handling
+
 ## [1.0.6](https://github.com/nietaki/rexbug/tree/v1.0.6) - 2022-09-23
 
 - Fix millisecond formatting on sub 100 millisecond values [54](https://github.com/nietaki/rexbug/pull/54)
